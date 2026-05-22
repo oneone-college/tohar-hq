@@ -33,6 +33,23 @@
       <h1 class="hero-question">מה היום שלי?</h1>
     </header>
 
+    <!-- STREAKS BAR -->
+    <div class="streaks-bar" id="streaks-bar">
+      <div class="streak-item">
+        <span class="streak-icon">🔥</span>
+        <span class="streak-label">MIT</span>
+        <span class="streak-value" id="streak-mit-current">0</span>
+        <span class="streak-sub" id="streak-mit-best"></span>
+      </div>
+      <div class="streak-divider"></div>
+      <div class="streak-item">
+        <span class="streak-icon">⚡</span>
+        <span class="streak-label">פעיל</span>
+        <span class="streak-value" id="streak-daily-current">0</span>
+        <span class="streak-sub" id="streak-daily-best"></span>
+      </div>
+    </div>
+
     <!-- VIEW: TODAY -->
     <section class="view active" id="view-today">
 
@@ -173,7 +190,8 @@
 
       <div class="modal-tabs">
         <button class="modal-tab active" data-modal-tab="inbox">ל-Inbox</button>
-        <button class="modal-tab" data-modal-tab="task">משימה עם שעה</button>
+        <button class="modal-tab" data-modal-tab="task">משימה</button>
+        <button class="modal-tab" data-modal-tab="template">🎬 Template</button>
       </div>
 
       <form id="modal-form">
@@ -202,8 +220,29 @@
           </select>
         </div>
 
-        <button type="submit" class="modal-submit">שמור</button>
+        <div class="modal-template-fields" id="modal-template-fields" style="display:none">
+          <label class="modal-template-label">בחר טמפלייט:</label>
+          <div class="template-options" id="template-options"></div>
+          <label class="modal-template-label" style="margin-top: 12px;">תאריך:</label>
+          <input type="date" id="modal-template-date">
+        </div>
+
+        <button type="submit" class="modal-submit" id="modal-submit-btn">שמור</button>
       </form>
+    </div>
+  </div>
+
+  <!-- WEEKLY SUMMARY MODAL -->
+  <div class="modal-backdrop" id="weekly-summary-backdrop">
+    <div class="modal weekly-summary-modal" role="dialog">
+      <div class="modal-header">
+        <h3>📅 סיכום השבוע</h3>
+        <button class="modal-close" id="weekly-close" aria-label="סגור">×</button>
+      </div>
+
+      <div class="weekly-content" id="weekly-content"></div>
+
+      <button class="modal-submit" id="weekly-dismiss">קדימה לשבוע הבא</button>
     </div>
   </div>
 
