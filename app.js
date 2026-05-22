@@ -60,6 +60,9 @@ let state = {
   },
   weeklySummary: { lastShown: null },
   shutdowns: {}, // { 'YYYY-MM-DD': { mood: 1-5, note: '...' } }
+  morningRituals: {}, // { 'YYYY-MM-DD': { mit, obstacle, completedAt } }
+  freezeTokens: 0,
+  lastFreezeEarnedAt: null,
 };
 
 // Migrate from v1 if exists
@@ -1538,6 +1541,8 @@ document.addEventListener('keydown', (e) => {
     if ($('#inbox-action-backdrop').classList.contains('open')) closeInboxAction();
     if ($('#weekly-summary-backdrop').classList.contains('open')) closeWeekly();
     if ($('#shutdown-backdrop').classList.contains('open')) closeShutdown();
+    if ($('#cmdbar-overlay').style.display !== 'none') closeCmdBar();
+    if ($('#done-day-overlay').style.display !== 'none') $('#done-day-overlay').style.display = 'none';
   }
 });
 
@@ -1659,8 +1664,429 @@ $('#shutdown-save').addEventListener('click', () => {
   toast('🌙 לילה טוב, טהר');
 });
 
+// ============ Morning Ritual ============
+const MORNING_HOUR_START = 5;
+const MORNING_HOUR_END = 12;
+
+let ritualState = {
+  currentStep: 1,
+  mit: '',
+  tasks: [], // { id, title, duration }
+  obstacle: '',
+};
+
+function maybeShowMorningRitual() {
+  const now = new Date();
+  const h = now.getHours();
+  if (h < MORNING_HOUR_START || h >= MORNING_HOUR_END) return;
+  const today = todayStr();
+  if (state.morningRituals && state.morningRituals[today]) return;
+  if (sessionStorage.getItem('ritual-dismissed-today') === today) return;
+
+  // Don't auto-show if user already has MIT for today
+  const todays = state.tasks.filter(t => t.date === today);
+  if (todays.some(t => t.isMit)) return;
+
+  openMorningRitual();
+}
+
+function openMorningRitual() {
+  ritualState = { currentStep: 1, mit: '', tasks: [], obstacle: '' };
+  $('#morning-ritual').style.display = 'flex';
+  $('#ritual-greeting').textContent = greeting();
+  showRitualStep(1);
+  setTimeout(() => $('#ritual-mit-input').focus(), 300);
+}
+
+function showRitualStep(step) {
+  ritualState.currentStep = step;
+  [1, 2, 3, 4].forEach(n => {
+    $(`#ritual-step-${n}`).style.display = n === step ? 'flex' : 'none';
+  });
+  $('#ritual-progress-bar').style.width = `${(step / 3) * 100}%`;
+
+  if (step === 2) {
+    renderRitualTasks();
+    setTimeout(() => $('#ritual-task-input').focus(), 200);
+  } else if (step === 3) {
+    setTimeout(() => $('#ritual-obstacle-input').focus(), 200);
+  } else if (step === 4) {
+    renderRitualReveal();
+  }
+}
+
+function renderRitualTasks() {
+  const list = $('#ritual-tasks');
+  list.innerHTML = '';
+  ritualState.tasks.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'ritual-task';
+    el.innerHTML = `
+      <div class="ritual-task-title">${escapeHtml(t.title)}</div>
+      <div class="ritual-task-duration">${formatDuration(t.duration)}</div>
+      <button class="ritual-task-remove" data-id="${t.id}">×</button>
+    `;
+    el.querySelector('.ritual-task-remove').addEventListener('click', () => {
+      ritualState.tasks = ritualState.tasks.filter(x => x.id !== t.id);
+      renderRitualTasks();
+    });
+    list.appendChild(el);
+  });
+  renderRitualBudget();
+}
+
+function formatDuration(min) {
+  if (min < 60) return `${min} דק'`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (m === 0) return h === 1 ? 'שעה' : `${h} שעות`;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
+function renderRitualBudget() {
+  const totalMin = ritualState.tasks.reduce((s, t) => s + t.duration, 0);
+  // Add MIT estimate (assume 60 min default)
+  const totalWithMit = totalMin + 60;
+  const startHour = new Date().getHours();
+  const finishHour = startHour + (totalWithMit / 60);
+  const finishH = Math.floor(finishHour);
+  const finishM = Math.round((finishHour - finishH) * 60);
+
+  const finishStr = `${String(finishH).padStart(2, '0')}:${String(finishM).padStart(2, '0')}`;
+  const hoursStr = (totalWithMit / 60).toFixed(1).replace(/\.0$/, '');
+
+  const el = $('#ritual-budget');
+  if (totalMin === 0) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  const over = finishH >= 22;
+  el.classList.toggle('over', over);
+  el.innerHTML = `תכננת <strong>${hoursStr} שעות</strong> · היום שלך נגמר ב-<strong>${finishStr}</strong>${over ? ' · יותר מדי?' : ' · ריאלי'}`;
+}
+
+$('#ritual-add-task-btn').addEventListener('click', addRitualTask);
+$('#ritual-task-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addRitualTask();
+  }
+});
+
+function addRitualTask() {
+  const input = $('#ritual-task-input');
+  const dur = $('#ritual-task-duration');
+  const title = input.value.trim();
+  if (!title) return;
+  ritualState.tasks.push({
+    id: uuid(),
+    title,
+    duration: parseInt(dur.value),
+  });
+  input.value = '';
+  input.focus();
+  renderRitualTasks();
+  buzz(8);
+}
+
+$('#ritual-next-1').addEventListener('click', () => {
+  const mit = $('#ritual-mit-input').value.trim();
+  if (!mit) {
+    $('#ritual-mit-input').focus();
+    return;
+  }
+  ritualState.mit = mit;
+  showRitualStep(2);
+});
+
+$('#ritual-mit-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#ritual-next-1').click();
+});
+
+$('#ritual-next-2').addEventListener('click', () => showRitualStep(3));
+
+$('#ritual-obstacle-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#ritual-finish').click();
+});
+
+$('#ritual-finish').addEventListener('click', finishRitual);
+
+function finishRitual() {
+  ritualState.obstacle = $('#ritual-obstacle-input').value.trim();
+
+  const today = todayStr();
+  const now = new Date();
+  let cursorH = now.getHours();
+  let cursorM = Math.ceil(now.getMinutes() / 15) * 15;
+  if (cursorM >= 60) { cursorH += 1; cursorM = 0; }
+  if (cursorH < 9) cursorH = 9;
+
+  // Create MIT task first
+  const mitStart = `${String(cursorH).padStart(2, '0')}:${String(cursorM).padStart(2, '0')}`;
+  let endH = cursorH + 1;
+  let endM = cursorM;
+  if (endH >= 24) endH = 23;
+  const mitEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+  state.tasks.push({
+    id: uuid(),
+    title: ritualState.mit,
+    date: today,
+    startTime: mitStart,
+    endTime: mitEnd,
+    category: detectCategory(ritualState.mit) || 'work',
+    isMit: true,
+    done: false,
+    createdAt: Date.now(),
+  });
+
+  // Advance cursor 1 hour
+  cursorH = endH;
+  cursorM = endM;
+
+  // Add the other tasks
+  ritualState.tasks.forEach(t => {
+    cursorM += t.duration;
+    while (cursorM >= 60) { cursorH += 1; cursorM -= 60; }
+    const startTime = `${String(Math.max(0, cursorH - t.duration/60 | 0)).padStart(2,'0')}:${String(cursorM).padStart(2,'0')}`;
+    // Simpler: compute start = cursor - duration
+    const totalEndMin = cursorH * 60 + cursorM;
+    const totalStartMin = totalEndMin - t.duration;
+    const sH = Math.floor(totalStartMin / 60);
+    const sM = totalStartMin % 60;
+
+    state.tasks.push({
+      id: uuid(),
+      title: t.title,
+      date: today,
+      startTime: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+      endTime: `${String(cursorH).padStart(2, '0')}:${String(cursorM).padStart(2, '0')}`,
+      category: detectCategory(t.title) || 'work',
+      isMit: false,
+      done: false,
+      createdAt: Date.now(),
+    });
+  });
+
+  state.morningRituals = state.morningRituals || {};
+  state.morningRituals[today] = {
+    mit: ritualState.mit,
+    obstacle: ritualState.obstacle,
+    completedAt: new Date().toISOString(),
+  };
+
+  saveState();
+  showRitualStep(4);
+}
+
+function detectCategory(title) {
+  const map = [
+    [/DJ|דיג'יי|אירוע|חתונה|מסיבה|סט/i, 'dj'],
+    [/הפקה|אייבלטון|ableton|סטודיו|מיקס/i, 'production'],
+    [/אימון|כושר|ריצה/i, 'fitness'],
+    [/לימוד|claude|קורס|ai/i, 'learning'],
+    [/פגישה|שיחה|טלפון|זום/i, 'meetings'],
+    [/סטורי|רילס|פוסט|אינסטה|תוכן|שיווק/i, 'content'],
+    [/השכרה|מינהלה|רום/i, 'work'],
+  ];
+  for (const [rgx, cat] of map) if (rgx.test(title)) return cat;
+  return null;
+}
+
+function renderRitualReveal() {
+  const today = todayStr();
+  const todays = state.tasks.filter(t => t.date === today)
+    .sort((a, b) => timeToMin(a.startTime) - timeToMin(b.startTime));
+
+  const container = $('#ritual-timeline');
+  container.innerHTML = '';
+  todays.forEach((task, idx) => {
+    const el = document.createElement('div');
+    el.className = 'ritual-timeline-block' + (task.isMit ? ' mit' : '');
+    el.style.animationDelay = `${idx * 80}ms`;
+    el.innerHTML = `
+      <div class="ritual-timeline-block-content">
+        <div class="ritual-timeline-block-title">${escapeHtml(task.title)}${task.isMit ? ' ⭐' : ''}</div>
+        <div class="ritual-timeline-block-meta">${CATEGORIES[task.category]?.name || ''}</div>
+      </div>
+      <div class="ritual-timeline-block-time">${task.startTime}</div>
+    `;
+    container.appendChild(el);
+  });
+  buzz([15, 30, 15]);
+}
+
+$('#ritual-go').addEventListener('click', () => {
+  $('#morning-ritual').style.display = 'none';
+  renderAll();
+  toast('🌅 בוקר טוב, תהיה יום מהמם');
+});
+
+$('#ritual-skip').addEventListener('click', () => {
+  $('#morning-ritual').style.display = 'none';
+  sessionStorage.setItem('ritual-dismissed-today', todayStr());
+});
+
+// ============ Done For The Day ============
+function maybeShowDoneForDay() {
+  // Triggered manually from shutdown ritual completion (or "all tasks done")
+  // Don't auto-show here, called from shutdown save
+}
+
+function showDoneForDay() {
+  const today = todayStr();
+  const todays = state.tasks.filter(t => t.date === today);
+  const done = todays.filter(t => t.done).length;
+  const mit = todays.find(t => t.isMit);
+  const mitDone = mit && mit.done;
+
+  // Compute streak after shutdown
+  recomputeStreaks();
+
+  const statsEl = $('#done-day-stats');
+  let html = '';
+  html += `<div>${done}/${todays.length} משימות הושלמו</div>`;
+  if (mit) html += `<div>MIT ${mitDone ? '✓ הושלם' : 'לא הושלם'}</div>`;
+  if (state.streaks.mitCurrent > 0) html += `<div>🔥 ${state.streaks.mitCurrent} ימים רצוף</div>`;
+  statsEl.innerHTML = html;
+
+  $('#done-day-overlay').style.display = 'flex';
+  buzz([20, 50, 20, 50]);
+}
+
+$('#done-day-close').addEventListener('click', () => {
+  $('#done-day-overlay').style.display = 'none';
+});
+
+// ============ Command Bar ============
+const COMMANDS = [
+  { id: 'go-today', label: 'עבור ל-היום', icon: '📅', hint: 'GT', run: () => switchTab('today') },
+  { id: 'go-inbox', label: 'עבור ל-Inbox', icon: '📥', hint: 'GI', run: () => switchTab('inbox') },
+  { id: 'go-goals', label: 'עבור ל-מטרות', icon: '🎯', hint: 'GG', run: () => switchTab('goals') },
+  { id: 'go-week', label: 'עבור ל-שבוע', icon: '🗓', hint: 'GW', run: () => switchTab('week') },
+  { id: 'new-task', label: 'משימה חדשה', icon: '⊕', hint: 'N', run: () => $('#fab').click() },
+  { id: 'morning-ritual', label: 'התחל טקס בוקר', icon: '🌅', hint: '', run: () => openMorningRitual() },
+  { id: 'shutdown', label: 'סגור את היום', icon: '🌙', hint: '', run: () => openShutdownModal() },
+  { id: 'weekly-summary', label: 'הצג סיכום שבועי', icon: '📊', hint: '', run: () => { window.tohar.forceWeekly(); } },
+  { id: 'done-day', label: 'הצג מסך סוף יום', icon: '✨', hint: '', run: () => showDoneForDay() },
+];
+
+let cmdbarSelectedIdx = 0;
+
+function openCmdBar() {
+  $('#cmdbar-overlay').style.display = 'flex';
+  $('#cmdbar-input').value = '';
+  cmdbarSelectedIdx = 0;
+  renderCmdResults('');
+  setTimeout(() => $('#cmdbar-input').focus(), 50);
+}
+
+function closeCmdBar() {
+  $('#cmdbar-overlay').style.display = 'none';
+}
+
+function switchTab(view) {
+  const tab = document.querySelector(`.tab[data-view="${view}"]`);
+  if (tab) tab.click();
+}
+
+function renderCmdResults(query) {
+  const q = query.toLowerCase();
+  const filtered = COMMANDS.filter(c => c.label.toLowerCase().includes(q) || c.id.includes(q));
+  const container = $('#cmdbar-results');
+  container.innerHTML = '';
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-faint);font-size:13px;">לא נמצאו פעולות</div>`;
+    return;
+  }
+
+  cmdbarSelectedIdx = Math.min(cmdbarSelectedIdx, filtered.length - 1);
+
+  filtered.forEach((c, idx) => {
+    const el = document.createElement('div');
+    el.className = 'cmdbar-result' + (idx === cmdbarSelectedIdx ? ' selected' : '');
+    el.innerHTML = `
+      <span class="cmdbar-result-icon">${c.icon}</span>
+      <span class="cmdbar-result-text">${escapeHtml(c.label)}</span>
+      ${c.hint ? `<span class="cmdbar-result-hint">${c.hint}</span>` : ''}
+    `;
+    el.addEventListener('click', () => {
+      closeCmdBar();
+      setTimeout(() => c.run(), 50);
+    });
+    container.appendChild(el);
+  });
+}
+
+$('#cmdbar-input').addEventListener('input', (e) => {
+  cmdbarSelectedIdx = 0;
+  renderCmdResults(e.target.value);
+});
+
+$('#cmdbar-input').addEventListener('keydown', (e) => {
+  const q = e.target.value.toLowerCase();
+  const filtered = COMMANDS.filter(c => c.label.toLowerCase().includes(q) || c.id.includes(q));
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    cmdbarSelectedIdx = Math.min(filtered.length - 1, cmdbarSelectedIdx + 1);
+    renderCmdResults(e.target.value);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    cmdbarSelectedIdx = Math.max(0, cmdbarSelectedIdx - 1);
+    renderCmdResults(e.target.value);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const cmd = filtered[cmdbarSelectedIdx];
+    if (cmd) {
+      closeCmdBar();
+      setTimeout(() => cmd.run(), 50);
+    }
+  }
+});
+
+$('#cmdbar-overlay').addEventListener('click', (e) => {
+  if (e.target === $('#cmdbar-overlay')) closeCmdBar();
+});
+
+// Open with Cmd-K / Ctrl-K
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    openCmdBar();
+  }
+});
+
+// Long-press on FAB to open command bar
+let fabPressTimer = null;
+$('#fab').addEventListener('pointerdown', (e) => {
+  fabPressTimer = setTimeout(() => {
+    fabPressTimer = null;
+    openCmdBar();
+    buzz(20);
+  }, 500);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
+  $('#fab').addEventListener(evt, () => {
+    if (fabPressTimer) clearTimeout(fabPressTimer);
+  });
+});
+
+// Hook into shutdown save to show Done screen
+const origShutdownSave = $('#shutdown-save').onclick;
+$('#shutdown-save').addEventListener('click', () => {
+  setTimeout(() => {
+    if (!$('#shutdown-backdrop').classList.contains('open')) {
+      showDoneForDay();
+    }
+  }, 400);
+});
+
 loadState();
 renderAll();
+maybeShowMorningRitual();
 maybeShowWeeklySummary();
 maybeShowShutdownBanner();
 
@@ -1683,6 +2109,9 @@ window.tohar = {
     $('#weekly-summary-backdrop').classList.add('open');
   },
   forceShutdown: () => openShutdownModal(),
+  forceMorning: () => openMorningRitual(),
+  forceDone: () => showDoneForDay(),
+  forceCmd: () => openCmdBar(),
   reset: () => {
     if (confirm('למחוק את כל הנתונים?')) {
       localStorage.removeItem(STORAGE_KEY);

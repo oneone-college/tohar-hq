@@ -342,6 +342,99 @@
     </div>
   </div>
 
+  <!-- MORNING RITUAL — Full screen takeover -->
+  <div class="ritual-overlay" id="morning-ritual" style="display:none">
+    <div class="ritual-progress">
+      <div class="ritual-progress-bar" id="ritual-progress-bar"></div>
+    </div>
+    <button class="ritual-skip" id="ritual-skip" aria-label="דלג">דלג</button>
+
+    <!-- Step 1: Greeting + MIT -->
+    <div class="ritual-step" id="ritual-step-1">
+      <div class="ritual-meta">
+        <span class="ritual-step-num">01</span>
+        <span class="ritual-step-total">/ 3</span>
+      </div>
+      <h1 class="ritual-greeting" id="ritual-greeting">בוקר טוב, טהר</h1>
+      <p class="ritual-q">מה הדבר <em>האחד</em> שחייב לקרות היום?</p>
+      <input type="text" id="ritual-mit-input" placeholder="ה-MIT שלך…" autocomplete="off" autofocus>
+      <button class="ritual-next" id="ritual-next-1">המשך →</button>
+    </div>
+
+    <!-- Step 2: Pick tasks + time estimates -->
+    <div class="ritual-step" id="ritual-step-2" style="display:none">
+      <div class="ritual-meta">
+        <span class="ritual-step-num">02</span>
+        <span class="ritual-step-total">/ 3</span>
+      </div>
+      <h2 class="ritual-q">מה עוד יקרה היום?</h2>
+      <p class="ritual-sub">תוסיף 3-5 משימות. תן לכל אחת זמן.</p>
+
+      <div class="ritual-tasks" id="ritual-tasks"></div>
+
+      <div class="ritual-add-task">
+        <input type="text" id="ritual-task-input" placeholder="עוד משימה…" autocomplete="off">
+        <select id="ritual-task-duration">
+          <option value="15">15 דק'</option>
+          <option value="30" selected>30 דק'</option>
+          <option value="45">45 דק'</option>
+          <option value="60">שעה</option>
+          <option value="90">1.5 שעות</option>
+          <option value="120">2 שעות</option>
+          <option value="180">3 שעות</option>
+        </select>
+        <button id="ritual-add-task-btn" type="button">+</button>
+      </div>
+
+      <div class="ritual-budget" id="ritual-budget"></div>
+
+      <button class="ritual-next" id="ritual-next-2">המשך →</button>
+    </div>
+
+    <!-- Step 3: Obstacle -->
+    <div class="ritual-step" id="ritual-step-3" style="display:none">
+      <div class="ritual-meta">
+        <span class="ritual-step-num">03</span>
+        <span class="ritual-step-total">/ 3</span>
+      </div>
+      <h2 class="ritual-q">מה המכשול הצפוי?</h2>
+      <p class="ritual-sub">משהו שיכול לעצור אותך היום (אופציונלי).</p>
+      <input type="text" id="ritual-obstacle-input" placeholder="לדוגמה: ישיבה שגוזלת זמן, עייפות…" autocomplete="off">
+      <button class="ritual-next" id="ritual-finish">בוא נצא לדרך</button>
+    </div>
+
+    <!-- Step 4: Timeline reveal -->
+    <div class="ritual-step ritual-reveal" id="ritual-step-4" style="display:none">
+      <div class="ritual-reveal-label">זה היום שלך</div>
+      <div class="ritual-timeline" id="ritual-timeline"></div>
+      <button class="ritual-next ritual-go" id="ritual-go">קדימה ✨</button>
+    </div>
+  </div>
+
+  <!-- DONE FOR THE DAY SCREEN -->
+  <div class="done-day-overlay" id="done-day-overlay" style="display:none">
+    <div class="done-day-content">
+      <div class="done-day-icon">🌙</div>
+      <div class="done-day-title">סיימת</div>
+      <div class="done-day-sub">סגור את המחשב.</div>
+      <div class="done-day-stats" id="done-day-stats"></div>
+      <button class="done-day-close" id="done-day-close">לילה טוב</button>
+    </div>
+  </div>
+
+  <!-- COMMAND BAR -->
+  <div class="cmdbar-overlay" id="cmdbar-overlay" style="display:none">
+    <div class="cmdbar">
+      <input type="text" id="cmdbar-input" placeholder="חפש או הקלד פעולה…" autocomplete="off">
+      <div class="cmdbar-results" id="cmdbar-results"></div>
+      <div class="cmdbar-footer">
+        <span class="cmdbar-hint">↑↓ לניווט</span>
+        <span class="cmdbar-hint">↵ לבחירה</span>
+        <span class="cmdbar-hint">ESC לסגור</span>
+      </div>
+    </div>
+  </div>
+
   <!-- WEEKLY SUMMARY MODAL -->
   <div class="modal-backdrop" id="weekly-summary-backdrop">
     <div class="modal weekly-summary-modal" role="dialog">

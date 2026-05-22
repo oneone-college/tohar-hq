@@ -1981,6 +1981,559 @@ body {
   100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(720deg); opacity: 0; }
 }
 
+/* ============ Morning Ritual — Full screen takeover ============ */
+.ritual-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.4s var(--ease-out);
+}
+
+.ritual-progress {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.04);
+}
+
+.ritual-progress-bar {
+  height: 100%;
+  background: var(--gold);
+  width: 33%;
+  transition: width 0.4s var(--ease-out);
+}
+
+.ritual-skip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 18px);
+  left: 24px;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 12px;
+  z-index: 1;
+}
+
+.ritual-skip:hover {
+  color: var(--text-dim);
+}
+
+.ritual-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 540px;
+  margin: 0 auto;
+  width: 100%;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  animation: ritualFade 0.5s var(--ease-out);
+}
+
+@keyframes ritualFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ritual-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2.5px;
+  margin-bottom: 32px;
+}
+
+.ritual-step-num {
+  color: var(--gold);
+}
+
+.ritual-step-total {
+  color: var(--text-faint);
+  margin-right: 4px;
+}
+
+.ritual-greeting {
+  font-size: clamp(20px, 3.5vw, 26px);
+  color: var(--text-soft);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.ritual-q {
+  font-size: clamp(28px, 6vw, 42px);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.ritual-q em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.ritual-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.ritual-step input[type="text"] {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--gold-soft);
+  padding: 16px 0;
+  color: var(--text);
+  font-family: inherit;
+  font-size: clamp(18px, 3vw, 22px);
+  margin-bottom: 36px;
+  transition: border-color 0.2s var(--ease-out);
+}
+
+.ritual-step input[type="text"]:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+
+.ritual-step input[type="text"]::placeholder {
+  color: var(--text-faint);
+}
+
+.ritual-next {
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 14px;
+  padding: 16px 32px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  align-self: flex-start;
+  letter-spacing: 0.3px;
+}
+
+.ritual-next:hover {
+  background: var(--gold-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(201, 165, 114, 0.3);
+}
+
+.ritual-next:disabled {
+  background: var(--bg-card);
+  color: var(--text-faint);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ritual-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.ritual-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  animation: slideIn 0.25s var(--ease-out);
+}
+
+.ritual-task-title {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ritual-task-duration {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.ritual-task-remove {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.18s;
+}
+
+.ritual-task-remove:hover {
+  color: var(--danger);
+}
+
+.ritual-add-task {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-bottom: 18px;
+  align-items: stretch;
+}
+
+.ritual-add-task input {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+.ritual-add-task input:focus {
+  outline: none;
+  border-color: var(--border-gold) !important;
+}
+
+.ritual-add-task select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.ritual-add-task button {
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  width: 44px;
+  font-size: 22px;
+  font-weight: 300;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.ritual-add-task button:hover {
+  background: var(--gold-bright);
+}
+
+.ritual-budget {
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 28px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.ritual-budget strong {
+  color: var(--gold);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.ritual-budget.over {
+  border-color: rgba(201, 87, 87, 0.4);
+}
+
+.ritual-budget.over strong {
+  color: var(--danger);
+}
+
+/* ============ Ritual Reveal — Timeline ============ */
+.ritual-reveal {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.ritual-reveal-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  animation: ritualRevealLabel 0.5s var(--ease-out);
+}
+
+@keyframes ritualRevealLabel {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ritual-timeline {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+
+.ritual-timeline-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-right: 3px solid var(--gold);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: right;
+  opacity: 0;
+  animation: ritualRevealBlock 0.4s var(--ease-spring) forwards;
+}
+
+.ritual-timeline-block.mit {
+  background: var(--gold-15);
+  border-right-color: var(--gold-bright);
+}
+
+.ritual-timeline-block-content {
+  text-align: right;
+}
+
+.ritual-timeline-block-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.ritual-timeline-block-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.ritual-timeline-block-time {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+@keyframes ritualRevealBlock {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.ritual-go {
+  background: var(--gold) !important;
+  color: var(--bg) !important;
+  padding: 16px 40px !important;
+  font-size: 16px !important;
+  letter-spacing: 1px;
+  animation: ritualGo 0.4s var(--ease-spring) 0.8s both;
+}
+
+@keyframes ritualGo {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ============ Done For The Day ============ */
+.done-day-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.6s var(--ease-out);
+}
+
+.done-day-content {
+  text-align: center;
+  max-width: 320px;
+}
+
+.done-day-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: doneMoon 4s ease-in-out infinite;
+}
+
+@keyframes doneMoon {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+}
+
+.done-day-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.done-day-sub {
+  font-size: 17px;
+  color: var(--gold);
+  margin-bottom: 32px;
+  font-weight: 500;
+}
+
+.done-day-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.done-day-close {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  padding: 12px 32px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.done-day-close:hover {
+  background: var(--gold-faint);
+}
+
+/* ============ Command Bar ============ */
+.cmdbar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 150;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 20px 20px;
+  animation: fadeIn 0.18s var(--ease-out);
+}
+
+.cmdbar {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-gold);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 540px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(201, 165, 114, 0.1);
+  animation: cmdbarSlide 0.22s var(--ease-spring);
+}
+
+@keyframes cmdbarSlide {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#cmdbar-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 18px 22px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+#cmdbar-input:focus { outline: none; }
+#cmdbar-input::placeholder { color: var(--text-faint); }
+
+.cmdbar-results {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.cmdbar-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.cmdbar-result.selected {
+  background: var(--gold-faint);
+  color: var(--gold);
+}
+
+.cmdbar-result-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.cmdbar-result-text {
+  flex: 1;
+}
+
+.cmdbar-result-hint {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--text-faint);
+  background: var(--bg-card);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.cmdbar-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+}
+
+.cmdbar-hint {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.3px;
+}
+
 /* ============ View Transitions API ============ */
 ::view-transition-old(root),
 ::view-transition-new(root) {
