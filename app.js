@@ -283,6 +283,298 @@ function renderStreakDots(type) {
 function renderHero() {
   $('#hero-greeting').textContent = greeting();
   $('#hero-date').textContent = formatDateHe(new Date());
+  renderIdentityStatement();
+  renderYesterdayBridge();
+}
+
+// ============ Identity Statement ============
+function renderIdentityStatement() {
+  const el = $('#identity-statement');
+  if (!el) return;
+
+  const statement = buildIdentityStatement();
+  if (statement) {
+    el.innerHTML = `<span class="id-dot"></span>${statement}`;
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+  }
+}
+
+function buildIdentityStatement() {
+  // Pick the strongest signal from user data
+  const s = state.streaks || {};
+
+  // Big streak wins
+  if (s.mitCurrent >= 5) return `streak של ${s.mitCurrent} ימים 🔥`;
+  if (s.dailyCurrent >= 10) return `${s.dailyCurrent} ימים רצופים פעיל`;
+
+  // Weekly category dominance
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  const weekStr = dateStrOf(weekAgo);
+
+  const catMin = {};
+  state.tasks.filter(t => t.done && t.date >= weekStr).forEach(t => {
+    if (t.startTime && t.endTime) {
+      const m = timeToMin(t.endTime) - timeToMin(t.startTime);
+      if (m > 0) catMin[t.category] = (catMin[t.category] || 0) + m;
+    }
+  });
+
+  const top = Object.entries(catMin).sort((a, b) => b[1] - a[1])[0];
+  if (top && top[1] > 60) { // at least 1 hour in past week
+    const hours = (top[1] / 60).toFixed(1).replace(/\.0$/, '');
+    const labels = {
+      production: `מפיק · ${hours} שעות אייבלטון השבוע`,
+      dj: `DJ · ${hours} שעות סטים השבוע`,
+      content: `יוצר תוכן · ${hours} שעות השבוע`,
+      work: `עובד · ${hours} שעות במינהלה השבוע`,
+      fitness: `אתלט · ${hours} שעות אימון השבוע`,
+      learning: `לומד · ${hours} שעות השבוע`,
+    };
+    if (labels[top[0]]) return labels[top[0]];
+  }
+
+  // Monthly DJ count
+  const monthAgo = new Date(today);
+  monthAgo.setMonth(today.getMonth() - 1);
+  const monthStr = dateStrOf(monthAgo);
+  const djCount = state.tasks.filter(t => t.done && t.category === 'dj' && t.date >= monthStr).length;
+  if (djCount >= 3) return `DJ · ${djCount} אירועים החודש`;
+
+  // Goals progress
+  const goalsDone = state.goals.filter(g => g.done).length;
+  if (goalsDone >= 3) return `${goalsDone} מטרות הושגו עד היום`;
+
+  // First-time user / minimal data
+  const totalDone = state.tasks.filter(t => t.done).length;
+  if (totalDone >= 50) return `${totalDone} משימות הושלמו`;
+  if (totalDone >= 10) return `מתחיל לקבוע קצב`;
+
+  return null;
+}
+
+// ============ Yesterday Bridge ============
+function renderYesterdayBridge() {
+  const el = $('#yesterday-bridge');
+  if (!el) return;
+
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yStr = dateStrOf(yesterday);
+
+  const yShutdown = state.shutdowns && state.shutdowns[yStr];
+  if (yShutdown && yShutdown.note) {
+    $('#yesterday-text').textContent = `"${yShutdown.note}"`;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ============ 3 Daily Rings ============
+function renderRings() {
+  const today = todayStr();
+  const todays = state.tasks.filter(t => t.date === today);
+  const done = todays.filter(t => t.done);
+  const mit = todays.find(t => t.isMit);
+  const mitDone = mit && mit.done;
+
+  // Ring 1: Tasks
+  const tasksPct = todays.length === 0 ? 0 : (done.length / todays.length);
+  setRing('#ring-tasks', tasksPct);
+  $('#ring-tasks-value').textContent = `${done.length}/${todays.length}`;
+
+  // Ring 2: MIT (binary)
+  setRing('#ring-mit', mit ? (mitDone ? 1 : 0) : 0);
+  $('#ring-mit-value').textContent = !mit ? '—' : (mitDone ? '✓' : '0/1');
+
+  // Ring 3: Hours of deep work (target 6h)
+  const totalMin = done.reduce((sum, t) => {
+    if (t.startTime && t.endTime) {
+      const m = timeToMin(t.endTime) - timeToMin(t.startTime);
+      return sum + (m > 0 ? m : 0);
+    }
+    return sum;
+  }, 0);
+  const hoursTarget = 6 * 60; // 6 hours
+  const hoursPct = Math.min(1, totalMin / hoursTarget);
+  setRing('#ring-hours', hoursPct);
+  const hoursStr = (totalMin / 60).toFixed(1).replace(/\.0$/, '');
+  $('#ring-hours-value').textContent = `${hoursStr}ש׳`;
+}
+
+function setRing(selector, pct) {
+  const ring = document.querySelector(selector);
+  if (!ring) return;
+  const circumference = 2 * Math.PI * 34;
+  const offset = circumference * (1 - Math.min(1, Math.max(0, pct)));
+  ring.style.strokeDashoffset = offset;
+  if (pct >= 1) ring.classList.add('completed');
+  else ring.classList.remove('completed');
+}
+
+// ============ Yearly Heatmap ============
+function renderHeatmap() {
+  const grid = $('#heatmap-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStrVal = todayStr();
+
+  // Build map of date → score
+  const dateScore = {};
+  state.tasks.filter(t => t.done && t.date).forEach(t => {
+    dateScore[t.date] = (dateScore[t.date] || 0) + 1;
+  });
+
+  // Render last 365 days, oldest first
+  const start = new Date(today);
+  start.setDate(today.getDate() - 364);
+
+  // Align to Sunday for nice grid (RTL but we set direction LTR on grid)
+  while (start.getDay() !== 0) {
+    start.setDate(start.getDate() - 1);
+  }
+
+  let activeDays = 0;
+  let bestDay = 0;
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    const dStr = dateStrOf(cursor);
+    const score = dateScore[dStr] || 0;
+    if (score > 0) activeDays++;
+    if (score > bestDay) bestDay = score;
+
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-day';
+    cell.title = `${dStr}: ${score} משימות`;
+    if (dStr === todayStrVal) cell.classList.add('today');
+    let lvl = 0;
+    if (score >= 1) lvl = 1;
+    if (score >= 3) lvl = 2;
+    if (score >= 5) lvl = 3;
+    if (score >= 8) lvl = 4;
+    if (lvl > 0) cell.classList.add(`lvl-${lvl}`);
+    grid.appendChild(cell);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  $('#heatmap-stats').textContent = `${activeDays} ימים פעילים השנה`;
+}
+
+// ============ Natural Language Parser ============
+function parseNaturalLanguage(input) {
+  // Returns { title, date, startTime, endTime, category } or null
+  if (!input || input.length < 3) return null;
+
+  let title = input.trim();
+  const original = title;
+  let date = todayStr();
+  let startTime = null;
+  let endTime = null;
+  let category = 'work';
+  let foundSomething = false;
+
+  // ----- Time patterns -----
+  // "ב-10:00" / "ב-10" / "בשעה 10:00" / "10:30"
+  const timeMatch = title.match(/(?:ב[-־]?|בשעה\s+)?(\d{1,2})(?::(\d{2}))?(?:\s|$)/);
+  if (timeMatch) {
+    const h = parseInt(timeMatch[1]);
+    if (h >= 0 && h <= 23) {
+      const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+      startTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const eh = (h + 1) % 24;
+      endTime = `${String(eh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      title = title.replace(timeMatch[0], ' ').trim();
+      foundSomething = true;
+    }
+  }
+
+  // ----- Date keywords -----
+  const dateKeywords = [
+    { rgx: /\bהיום\b/, days: 0 },
+    { rgx: /\bמחר\b/, days: 1 },
+    { rgx: /\bמחרתיים\b/, days: 2 },
+    { rgx: /\bבעוד\s+(\d+)\s+ימים?\b/, days: 'capture' },
+    { rgx: /\bראשון\b/, dayOfWeek: 0 },
+    { rgx: /\bשני\b/, dayOfWeek: 1 },
+    { rgx: /\bשלישי\b/, dayOfWeek: 2 },
+    { rgx: /\bרביעי\b/, dayOfWeek: 3 },
+    { rgx: /\bחמישי\b/, dayOfWeek: 4 },
+    { rgx: /\bשישי\b/, dayOfWeek: 5 },
+    { rgx: /\bשבת\b/, dayOfWeek: 6 },
+  ];
+
+  for (const k of dateKeywords) {
+    const m = title.match(k.rgx);
+    if (m) {
+      const d = new Date();
+      if (k.days === 'capture') {
+        d.setDate(d.getDate() + parseInt(m[1]));
+      } else if (typeof k.days === 'number') {
+        d.setDate(d.getDate() + k.days);
+      } else if (typeof k.dayOfWeek === 'number') {
+        // Next occurrence of that day
+        const today = d.getDay();
+        let diff = k.dayOfWeek - today;
+        if (diff <= 0) diff += 7;
+        d.setDate(d.getDate() + diff);
+      }
+      date = dateStrOf(d);
+      title = title.replace(m[0], ' ').trim();
+      foundSomething = true;
+      break;
+    }
+  }
+
+  // ----- Category keywords -----
+  const catKeywords = [
+    { rgx: /\b(DJ|דיג'יי|דיגיי|אירוע|חתונה|מסיבה|סט)\b/i, cat: 'dj' },
+    { rgx: /\b(הפקה|אייבלטון|ableton|סטודיו|מיקס|מאשאפ|פרודקשן)\b/i, cat: 'production' },
+    { rgx: /\b(אימון|כושר|ריצה|חדר כושר|gym)\b/i, cat: 'fitness' },
+    { rgx: /\b(לימוד|claude|למידה|קורס|ai)\b/i, cat: 'learning' },
+    { rgx: /\b(פגישה|שיחה|טלפון|זום|zoom)\b/i, cat: 'meetings' },
+    { rgx: /\b(סטורי|רילס|פוסט|אינסטה|תוכן|שיווק)\b/i, cat: 'content' },
+    { rgx: /\b(השכרה|השכרות|מינהלה|וואן\/וואן|רום)\b/i, cat: 'work' },
+    { rgx: /\b(חו"ל|טיסה|חו״ל)\b/i, cat: 'travel' },
+  ];
+
+  for (const k of catKeywords) {
+    if (k.rgx.test(title)) {
+      category = k.cat;
+      foundSomething = true;
+      break;
+    }
+  }
+
+  // Clean up trailing/leading spaces and connector words
+  title = title.replace(/\s{2,}/g, ' ')
+    .replace(/^(על|עם|של|את|ב|ל)\s+/, '')
+    .replace(/\s+(על|עם|של|את|ב|ל)$/, '')
+    .trim();
+
+  if (!foundSomething || title.length === 0) return null;
+
+  return { title, date, startTime, endTime, category, original };
+}
+
+function formatNLHint(parsed) {
+  const dateLbl = parsed.date === todayStr() ? 'היום' :
+                  parsed.date === dateAddDays(todayStr(), 1) ? 'מחר' :
+                  parsed.date;
+  const parts = [];
+  if (parsed.title) parts.push(`"${parsed.title}"`);
+  parts.push(dateLbl);
+  if (parsed.startTime) parts.push(parsed.startTime);
+  const catName = CATEGORIES[parsed.category]?.name || parsed.category;
+  parts.push(`· ${catName}`);
+  return `נזהה: ${parts.join(' · ')}`;
 }
 
 // ============ MIT ============
@@ -539,11 +831,21 @@ function pushToTomorrow(id) {
 function toggleTaskDone(id) {
   const task = state.tasks.find(t => t.id === id);
   if (!task) return;
+  const wasNotDone = !task.done;
   task.done = !task.done;
   task.doneAt = task.done ? new Date().toISOString() : null;
-  buzz(15);
+  buzz(wasNotDone ? [10, 20, 15] : 10);
+
+  // Trigger animation BEFORE re-render for smooth feel
+  const item = document.querySelector(`.task-item .task-text`);
+  const allCheckboxes = document.querySelectorAll('.task-checkbox');
+  allCheckboxes.forEach(cb => {
+    cb.classList.add('animating');
+    setTimeout(() => cb.classList.remove('animating'), 400);
+  });
+
   saveState();
-  renderAll();
+  setTimeout(() => renderAll(), 100);
 }
 
 function toggleMIT(id) {
@@ -868,12 +1170,25 @@ function quickAddOnDate(dateStr, labelText) {
 $$('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const view = tab.dataset.view;
-    $$('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    $$('.view').forEach(v => v.classList.remove('active'));
-    $(`#view-${view}`).classList.add('active');
+    const doSwitch = () => {
+      $$('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.view').forEach(v => v.classList.remove('active'));
+      $(`#view-${view}`).classList.add('active');
+      if (view === 'week') {
+        renderWeek();
+        renderHeatmap();
+      }
+    };
+
+    // View Transitions API for native-like morphing
+    if (document.startViewTransition) {
+      document.startViewTransition(() => doSwitch());
+    } else {
+      doSwitch();
+    }
+
     buzz(8);
-    if (view === 'week') renderWeek();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 });
@@ -881,9 +1196,30 @@ $$('.tab').forEach(tab => {
 // ============ FAB & Modal ============
 $('#fab').addEventListener('click', () => {
   $('#modal-title').value = '';
+  $('#nl-hint').style.display = 'none';
   $('#modal-backdrop').classList.add('open');
   setTimeout(() => $('#modal-title').focus(), 100);
   buzz(10);
+});
+
+// NL parser live hint
+let nlParsed = null;
+$('#modal-title').addEventListener('input', (e) => {
+  const val = e.target.value;
+  if (val.length < 4) {
+    $('#nl-hint').style.display = 'none';
+    nlParsed = null;
+    return;
+  }
+  const parsed = parseNaturalLanguage(val);
+  if (parsed) {
+    nlParsed = parsed;
+    $('#nl-hint-text').textContent = formatNLHint(parsed);
+    $('#nl-hint').style.display = 'flex';
+  } else {
+    $('#nl-hint').style.display = 'none';
+    nlParsed = null;
+  }
 });
 
 $('#modal-close').addEventListener('click', closeModal);
@@ -983,6 +1319,28 @@ $('#modal-form').addEventListener('submit', (e) => {
 
   const title = $('#modal-title').value.trim();
   if (!title) return;
+
+  // If NL was parsed AND user is on Inbox tab, auto-promote to task
+  if (nlParsed && (nlParsed.startTime || nlParsed.date !== todayStr())) {
+    state.tasks.push({
+      id: uuid(),
+      title: nlParsed.title || title,
+      date: nlParsed.date,
+      startTime: nlParsed.startTime || '09:00',
+      endTime: nlParsed.endTime || '10:00',
+      category: nlParsed.category || 'work',
+      isMit: false,
+      done: false,
+      createdAt: Date.now(),
+    });
+    buzz([10, 30, 10]);
+    saveState();
+    renderAll();
+    toast(`✨ ${nlParsed.title} נוסף`);
+    nlParsed = null;
+    closeModal();
+    return;
+  }
 
   if (modalMode === 'inbox') {
     addToInbox(title);
@@ -1186,6 +1544,7 @@ document.addEventListener('keydown', (e) => {
 // ============ Init ============
 function renderAll() {
   renderHero();
+  renderRings();
   renderStreaks();
   renderMIT();
   renderTasks();

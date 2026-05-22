@@ -27,19 +27,30 @@
   --text-dim: #707070;
   --text-faint: #4a4a4a;
 
-  /* Gold */
+  /* Gold tones (3 variants per design research) */
   --gold: #c9a572;
+  --gold-bright: #e0b884;
   --gold-soft: #8a7250;
   --gold-faint: rgba(201, 165, 114, 0.08);
+  --gold-15: rgba(201, 165, 114, 0.15);
 
   /* Status */
   --success: #6fa86d;
   --danger: #c95757;
 
-  /* Radii */
-  --r-sm: 8px;
-  --r: 14px;
-  --r-lg: 20px;
+  /* Radii — squircle-inspired */
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+
+  /* Easings (Linear-inspired) */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-snap: cubic-bezier(0.5, 0, 0.1, 1);
+
+  /* Layered gold shadow */
+  --shadow-gold: 0 1px 2px rgba(201, 165, 114, 0.08), 0 4px 12px rgba(201, 165, 114, 0.06), 0 0 0 1px rgba(201, 165, 114, 0.05);
 }
 
 html {
@@ -72,9 +83,245 @@ body {
 
 /* ============ Hero ============ */
 .hero {
-  margin-bottom: 40px;
-  animation: fadeUp 0.5s ease;
+  margin-bottom: 32px;
+  animation: fadeUp 0.5s var(--ease-out);
   padding-top: env(safe-area-inset-top);
+}
+
+/* ============ Identity Statement ============ */
+.identity-statement {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: none;
+  animation: fadeUp 0.6s var(--ease-out) 0.1s both;
+}
+
+.identity-statement.show { display: block; }
+
+.identity-statement .id-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--gold);
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--gold);
+}
+
+/* ============ Yesterday Bridge ============ */
+.yesterday-bridge {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-right: 3px solid var(--gold);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.5s var(--ease-out) 0.15s both;
+}
+
+.yesterday-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.yesterday-text {
+  font-size: 14px;
+  color: var(--text-soft);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ============ 3 Daily Rings (Apple Fitness inspired) ============ */
+.rings-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s var(--ease-out) 0.18s both;
+}
+
+.ring-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.25s var(--ease-out);
+}
+
+.ring-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.ring-svg {
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 6;
+}
+
+.ring-fg {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 213.6;  /* 2 * π * 34 */
+  stroke-dashoffset: 213.6;
+  transition: stroke-dashoffset 1s var(--ease-out);
+  filter: drop-shadow(0 0 4px rgba(201, 165, 114, 0.4));
+}
+
+.ring-fg.completed {
+  stroke: var(--gold-bright);
+  filter: drop-shadow(0 0 8px rgba(201, 165, 114, 0.6));
+}
+
+.ring-meta {
+  text-align: center;
+}
+
+.ring-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.ring-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+/* ============ Heatmap (GitHub-style yearly) ============ */
+.heatmap-section {
+  margin-top: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px;
+}
+
+.heatmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.heatmap-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.heatmap-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  direction: ltr;
+}
+
+.heatmap-grid::-webkit-scrollbar { height: 4px; }
+.heatmap-grid::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+
+.heatmap-day {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: transform 0.15s var(--ease-out);
+  cursor: pointer;
+}
+
+.heatmap-day:hover { transform: scale(1.4); }
+.heatmap-day.lvl-1 { background: rgba(201, 165, 114, 0.2); }
+.heatmap-day.lvl-2 { background: rgba(201, 165, 114, 0.4); }
+.heatmap-day.lvl-3 { background: rgba(201, 165, 114, 0.65); }
+.heatmap-day.lvl-4 { background: var(--gold); box-shadow: 0 0 6px rgba(201, 165, 114, 0.5); }
+.heatmap-day.today { outline: 1px solid var(--gold); outline-offset: 1px; }
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legend-dot.lvl-0 { background: rgba(255, 255, 255, 0.04); }
+.legend-dot.lvl-1 { background: rgba(201, 165, 114, 0.2); }
+.legend-dot.lvl-2 { background: rgba(201, 165, 114, 0.4); }
+.legend-dot.lvl-3 { background: rgba(201, 165, 114, 0.65); }
+.legend-dot.lvl-4 { background: var(--gold); }
+
+/* ============ NL Capture Hint ============ */
+.nl-hint {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--gold-faint);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--gold);
+  animation: fadeUp 0.25s var(--ease-out);
+}
+
+.nl-hint-icon {
+  font-size: 14px;
+}
+
+.nl-hint-text {
+  flex: 1;
+  font-weight: 500;
 }
 
 .hero-date {
@@ -1732,6 +1979,58 @@ body {
 @keyframes confetti-burst {
   0% { transform: translate(0, 0) scale(0) rotate(0); opacity: 1; }
   100% { transform: translate(var(--tx), var(--ty)) scale(1) rotate(720deg); opacity: 0; }
+}
+
+/* ============ View Transitions API ============ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+::view-transition-old(root) {
+  animation-name: vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* ============ SVG Animated Checkmark ============ */
+.task-checkbox.animating {
+  animation: check-pop 0.4s var(--ease-spring);
+}
+
+.task-checkbox.animating::after {
+  animation: check-draw 0.35s var(--ease-out) forwards;
+}
+
+@keyframes check-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes check-draw {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+.task-item.done .task-text {
+  animation: text-fade-strikethrough 0.4s var(--ease-out) forwards;
+}
+
+@keyframes text-fade-strikethrough {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
 }
 
 /* ============ Animations ============ */

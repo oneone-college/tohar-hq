@@ -29,11 +29,52 @@
     <!-- HERO -->
     <header class="hero">
       <div class="hero-date" id="hero-date">—</div>
+      <div class="identity-statement" id="identity-statement"></div>
       <div class="hero-greeting" id="hero-greeting">ערב טוב, טהר</div>
       <h1 class="hero-question">מה היום שלי?</h1>
     </header>
 
-    <!-- STREAKS BAR -->
+    <!-- YESTERDAY BRIDGE -->
+    <div class="yesterday-bridge" id="yesterday-bridge" style="display:none">
+      <div class="yesterday-label">אתמול אמרת</div>
+      <div class="yesterday-text" id="yesterday-text">—</div>
+    </div>
+
+    <!-- 3 DAILY RINGS -->
+    <div class="rings-container" id="rings-container">
+      <div class="ring-card">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="ring-fg ring-tasks" cx="40" cy="40" r="34" id="ring-tasks"/>
+        </svg>
+        <div class="ring-meta">
+          <div class="ring-label">משימות</div>
+          <div class="ring-value" id="ring-tasks-value">0/0</div>
+        </div>
+      </div>
+      <div class="ring-card">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="ring-fg ring-mit" cx="40" cy="40" r="34" id="ring-mit"/>
+        </svg>
+        <div class="ring-meta">
+          <div class="ring-label">MIT</div>
+          <div class="ring-value" id="ring-mit-value">—</div>
+        </div>
+      </div>
+      <div class="ring-card">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="ring-fg ring-hours" cx="40" cy="40" r="34" id="ring-hours"/>
+        </svg>
+        <div class="ring-meta">
+          <div class="ring-label">שעות</div>
+          <div class="ring-value" id="ring-hours-value">0ש׳</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STREAKS BAR (compact now, lives below rings) -->
     <div class="streaks-bar" id="streaks-bar">
       <div class="streak-item">
         <div class="streak-top">
@@ -156,6 +197,23 @@
         <p class="view-sub">7 ימים קדימה</p>
       </div>
       <div class="week-grid" id="week-grid"></div>
+
+      <div class="heatmap-section">
+        <div class="heatmap-header">
+          <div class="heatmap-title">השנה שלי</div>
+          <div class="heatmap-sub" id="heatmap-stats">—</div>
+        </div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+        <div class="heatmap-legend">
+          <span>פחות</span>
+          <span class="legend-dot lvl-0"></span>
+          <span class="legend-dot lvl-1"></span>
+          <span class="legend-dot lvl-2"></span>
+          <span class="legend-dot lvl-3"></span>
+          <span class="legend-dot lvl-4"></span>
+          <span>יותר</span>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -202,6 +260,10 @@
 
       <form id="modal-form">
         <input type="text" id="modal-title" placeholder="מה צריך לעשות?" required autocomplete="off">
+        <div class="nl-hint" id="nl-hint" style="display:none">
+          <span class="nl-hint-icon">✨</span>
+          <span class="nl-hint-text" id="nl-hint-text"></span>
+        </div>
 
         <div class="modal-task-fields" id="modal-task-fields" style="display:none">
           <div class="modal-time-row">
