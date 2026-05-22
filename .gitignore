@@ -15,3 +15,5 @@ credentials.json
 dist/
 build/
 .claude/
+
+.vercel
