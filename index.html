@@ -36,17 +36,23 @@
     <!-- STREAKS BAR -->
     <div class="streaks-bar" id="streaks-bar">
       <div class="streak-item">
-        <span class="streak-icon">🔥</span>
-        <span class="streak-label">MIT</span>
-        <span class="streak-value" id="streak-mit-current">0</span>
-        <span class="streak-sub" id="streak-mit-best"></span>
+        <div class="streak-top">
+          <span class="streak-icon">🔥</span>
+          <span class="streak-label">MIT</span>
+          <span class="streak-value" id="streak-mit-current">0</span>
+          <span class="streak-sub" id="streak-mit-best"></span>
+        </div>
+        <div class="streak-dots" id="streak-dots-mit"></div>
       </div>
       <div class="streak-divider"></div>
       <div class="streak-item">
-        <span class="streak-icon">⚡</span>
-        <span class="streak-label">פעיל</span>
-        <span class="streak-value" id="streak-daily-current">0</span>
-        <span class="streak-sub" id="streak-daily-best"></span>
+        <div class="streak-top">
+          <span class="streak-icon">⚡</span>
+          <span class="streak-label">פעיל</span>
+          <span class="streak-value" id="streak-daily-current">0</span>
+          <span class="streak-sub" id="streak-daily-best"></span>
+        </div>
+        <div class="streak-dots" id="streak-dots-daily"></div>
       </div>
     </div>
 
@@ -229,6 +235,48 @@
 
         <button type="submit" class="modal-submit" id="modal-submit-btn">שמור</button>
       </form>
+    </div>
+  </div>
+
+  <!-- SHUTDOWN RITUAL BANNER -->
+  <div class="shutdown-banner" id="shutdown-banner" style="display:none">
+    <div class="shutdown-content">
+      <span class="shutdown-icon">🌙</span>
+      <div class="shutdown-text">
+        <div class="shutdown-title">איך עבר היום?</div>
+        <div class="shutdown-sub">30 שניות לסגירת היום</div>
+      </div>
+    </div>
+    <button class="shutdown-dismiss" id="shutdown-dismiss" aria-label="לא עכשיו">×</button>
+  </div>
+
+  <!-- SHUTDOWN MODAL -->
+  <div class="modal-backdrop" id="shutdown-backdrop">
+    <div class="modal shutdown-modal" role="dialog">
+      <div class="modal-header">
+        <h3>🌙 סגירת היום</h3>
+        <button class="modal-close" id="shutdown-close" aria-label="סגור">×</button>
+      </div>
+
+      <div class="shutdown-section">
+        <div class="shutdown-section-label">איך הרגשת היום?</div>
+        <div class="mood-row" id="mood-row">
+          <button class="mood-btn" data-mood="1">😩</button>
+          <button class="mood-btn" data-mood="2">😕</button>
+          <button class="mood-btn" data-mood="3">😐</button>
+          <button class="mood-btn" data-mood="4">🙂</button>
+          <button class="mood-btn" data-mood="5">🤩</button>
+        </div>
+      </div>
+
+      <div class="shutdown-section">
+        <div class="shutdown-section-label">משפט אחד מסכם <span class="shutdown-optional">(אופציונלי)</span></div>
+        <input type="text" id="shutdown-note" placeholder="מה לוקח מהיום?" autocomplete="off">
+      </div>
+
+      <div class="shutdown-stats" id="shutdown-stats"></div>
+
+      <button class="modal-submit" id="shutdown-save">סגור את היום</button>
     </div>
   </div>
 

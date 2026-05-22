@@ -114,6 +114,289 @@ body {
   line-height: 1.05;
 }
 
+/* ============ Swipe Indicators ============ */
+.task-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.task-swipe-wrap::before,
+.task-swipe-wrap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* RTL: swipe right (toward right side) = positive translateX = "done" */
+.task-swipe-wrap::before {
+  right: 12px;
+  content: '✓';
+  background: rgba(111, 168, 109, 0.18);
+  color: var(--success);
+}
+
+.task-swipe-wrap::after {
+  left: 12px;
+  content: '→';
+  background: rgba(201, 165, 114, 0.18);
+  color: var(--gold);
+}
+
+.task-item.swiping-right ~ * { /* no-op */ }
+.task-swipe-wrap:has(.swiping-right)::before { opacity: 1; }
+.task-swipe-wrap:has(.swiping-left)::after { opacity: 1; }
+
+/* Touch action hint */
+.task-item {
+  touch-action: pan-y;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+}
+
+/* ============ MIT Long-Press ============ */
+.mit-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.mit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gold-faint);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.6s linear;
+  pointer-events: none;
+}
+
+.mit-btn.pressing::before {
+  transform: scaleX(1);
+}
+
+.mit-btn.completing {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+  transform: scale(1.05);
+}
+
+/* ============ Streak Dots ============ */
+.streak-dots {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.streak-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.streak-dot.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 6px rgba(201, 165, 114, 0.4);
+}
+
+.streak-dot.today {
+  outline: 1px solid var(--gold-soft);
+  outline-offset: 2px;
+}
+
+.streak-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============ Shutdown Banner ============ */
+.shutdown-banner {
+  position: fixed;
+  bottom: calc(85px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-gold);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 48;
+  max-width: calc(100% - 32px);
+  width: 360px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.shutdown-banner:hover {
+  background: var(--bg-card-hover);
+}
+
+.shutdown-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.shutdown-icon {
+  font-size: 24px;
+}
+
+.shutdown-text {
+  flex: 1;
+}
+
+.shutdown-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.shutdown-sub {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.shutdown-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+/* ============ Shutdown Modal ============ */
+.shutdown-modal {
+  max-width: 480px;
+}
+
+.shutdown-section {
+  margin-bottom: 22px;
+}
+
+.shutdown-section-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.shutdown-optional {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.mood-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.mood-btn {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.18s;
+  filter: grayscale(0.5);
+}
+
+.mood-btn:hover {
+  border-color: var(--border-hover);
+  filter: grayscale(0);
+}
+
+.mood-btn.selected {
+  border-color: var(--gold);
+  background: var(--gold-faint);
+  filter: grayscale(0);
+  transform: scale(1.08);
+}
+
+#shutdown-note {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+#shutdown-note:focus {
+  outline: none;
+  border-color: var(--border-gold);
+  background: var(--bg-card-hover);
+}
+
+#shutdown-note::placeholder {
+  color: var(--text-faint);
+}
+
+.shutdown-stats {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shutdown-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.shutdown-stat-label {
+  color: var(--text-soft);
+}
+
+.shutdown-stat-value {
+  color: var(--gold);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
 /* ============ Streaks Bar ============ */
 .streaks-bar {
   display: flex;
@@ -130,11 +413,11 @@ body {
 
 .streak-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 4px 16px;
   flex: 1;
-  justify-content: center;
 }
 
 .streak-icon {
@@ -169,8 +452,9 @@ body {
 
 .streak-divider {
   width: 1px;
-  height: 32px;
+  height: 48px;
   background: var(--border);
+  align-self: center;
 }
 
 /* ============ View Switching ============ */
@@ -787,14 +1071,70 @@ body {
 
 .week-day-task {
   font-size: 10.5px;
-  padding: 4px 6px;
+  padding: 5px 7px;
   background: rgba(255, 255, 255, 0.04);
   border-right: 2px solid var(--gold);
-  border-radius: 4px;
+  border-radius: 5px;
+  overflow: hidden;
+  color: var(--text-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+
+.week-day-task.done { opacity: 0.45; text-decoration: line-through; }
+.week-day-task.mit { background: var(--gold-faint); border-right-color: var(--gold); }
+
+.week-task-time {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.week-task-title {
+  font-size: 11px;
+  color: var(--text);
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-soft);
+}
+
+.week-day-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 14px;
+}
+
+.week-day-month {
+  font-size: 9px;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-right: 2px;
+}
+
+.week-day-add {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-faint);
+  border-radius: 6px;
+  padding: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: auto;
+}
+
+.week-day-add:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-faint);
 }
 
 /* ============ Bottom Tabs ============ */

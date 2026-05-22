@@ -59,6 +59,7 @@ let state = {
     dailyLastDate: null,
   },
   weeklySummary: { lastShown: null },
+  shutdowns: {}, // { 'YYYY-MM-DD': { mood: 1-5, note: '...' } }
 };
 
 // Migrate from v1 if exists
@@ -241,6 +242,41 @@ function renderStreaks() {
   $('#streak-mit-best').textContent = s.mitBest > 0 ? `שיא: ${s.mitBest}` : '';
   $('#streak-daily-current').textContent = s.dailyCurrent || 0;
   $('#streak-daily-best').textContent = s.dailyBest > 0 ? `שיא: ${s.dailyBest}` : '';
+
+  // Render 7-day dots
+  renderStreakDots('mit');
+  renderStreakDots('daily');
+}
+
+function renderStreakDots(type) {
+  const container = document.getElementById(`streak-dots-${type}`);
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Get set of date strings where this type was active
+  let activeDates;
+  if (type === 'mit') {
+    activeDates = new Set(
+      state.tasks.filter(t => t.isMit && t.done && t.date).map(t => t.date)
+    );
+  } else {
+    activeDates = new Set(
+      state.tasks.filter(t => t.done && t.date).map(t => t.date)
+    );
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Last 7 days, oldest first (left to right in LTR; right to left in RTL container)
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const dot = document.createElement('span');
+    dot.className = 'streak-dot' + (activeDates.has(dStr) ? ' on' : '') + (i === 0 ? ' today' : '');
+    dot.title = dStr;
+    container.appendChild(dot);
+  }
 }
 
 // ============ Hero ============
@@ -280,7 +316,13 @@ function renderMIT() {
   }
 }
 
-$('#mit-btn').addEventListener('click', (e) => {
+// Long-press to complete MIT (premium gesture)
+const mitBtn = $('#mit-btn');
+let mitPressTimer = null;
+let mitPressStart = 0;
+const MIT_HOLD_MS = 600;
+
+function completeMIT(e) {
   const today = todayStr();
   const mit = state.tasks.find(t => t.date === today && t.isMit);
   if (!mit || mit.done) return;
@@ -290,10 +332,43 @@ $('#mit-btn').addEventListener('click', (e) => {
   saveState();
   renderAll();
 
-  const rect = e.target.getBoundingClientRect();
+  const rect = mitBtn.getBoundingClientRect();
   confettiBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
-  buzz([20, 40, 20]);
+  buzz([20, 40, 20, 40, 20]);
   toast('🔥 MIT הושלם');
+}
+
+function startMitPress(e) {
+  const today = todayStr();
+  const mit = state.tasks.find(t => t.date === today && t.isMit);
+  if (!mit || mit.done) return;
+
+  mitPressStart = Date.now();
+  mitBtn.classList.add('pressing');
+  mitPressTimer = setTimeout(() => {
+    mitBtn.classList.remove('pressing');
+    mitBtn.classList.add('completing');
+    setTimeout(() => mitBtn.classList.remove('completing'), 300);
+    completeMIT(e);
+  }, MIT_HOLD_MS);
+}
+
+function endMitPress() {
+  if (mitPressTimer) clearTimeout(mitPressTimer);
+  mitPressTimer = null;
+  mitBtn.classList.remove('pressing');
+}
+
+mitBtn.addEventListener('pointerdown', startMitPress);
+mitBtn.addEventListener('pointerup', endMitPress);
+mitBtn.addEventListener('pointerleave', endMitPress);
+mitBtn.addEventListener('pointercancel', endMitPress);
+// Fallback: click still works (in case long-press is skipped, e.g. keyboard nav)
+mitBtn.addEventListener('click', (e) => {
+  // Click without hold — show hint
+  if (Date.now() - mitPressStart < MIT_HOLD_MS) {
+    toast('לחץ והחזק לסיום (0.6 שניות)');
+  }
 });
 
 // ============ Tasks ============
@@ -316,6 +391,14 @@ function renderTasks() {
   if (todays.length === 0) {
     list.innerHTML = '';
     empty.style.display = 'block';
+    const emptyTexts = [
+      ['יום ריק', 'תוסיף משימה עם הכפתור ⊕ או תזרוק ל-Inbox'],
+      ['אין משימות', 'תיהנה מהיום, או תזרוק רעיון ל-Inbox'],
+      ['הכל פנוי', 'תכניס משהו עם הכפתור למטה'],
+    ];
+    const hour = new Date().getHours();
+    const text = hour < 12 ? emptyTexts[0] : hour < 18 ? emptyTexts[1] : emptyTexts[2];
+    empty.innerHTML = `<p>${text[0]}</p><p class="tasks-empty-sub">${text[1]}</p>`;
     return;
   }
 
@@ -323,6 +406,9 @@ function renderTasks() {
   list.innerHTML = '';
 
   todays.forEach(task => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'task-swipe-wrap';
+
     const item = document.createElement('div');
     item.className = 'task-item' + (task.done ? ' done' : '') + (task.isMit ? ' mit' : '');
 
@@ -347,8 +433,107 @@ function renderTasks() {
       }
     });
 
-    list.appendChild(item);
+    // Swipe gestures
+    attachSwipe(item, {
+      onSwipeRight: () => {
+        if (!task.done) {
+          toggleTaskDone(task.id);
+          buzz([15, 30, 15]);
+        }
+      },
+      onSwipeLeft: () => {
+        // Push to tomorrow
+        pushToTomorrow(task.id);
+      },
+    });
+
+    wrapper.appendChild(item);
+    list.appendChild(wrapper);
   });
+}
+
+// ============ Swipe Gesture Helper ============
+function attachSwipe(el, { onSwipeRight, onSwipeLeft, threshold = 80 }) {
+  let startX = 0, startY = 0, currentX = 0, isPointerDown = false, locked = null;
+  const SWIPE_INDICATOR_MAX = 120;
+
+  const reset = (animate = true) => {
+    if (animate) el.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+    else el.style.transition = 'none';
+    el.style.transform = 'translateX(0)';
+    el.classList.remove('swiping-right', 'swiping-left');
+    setTimeout(() => { el.style.transition = 'none'; }, 280);
+  };
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return; // don't swipe on buttons
+    startX = e.clientX;
+    startY = e.clientY;
+    isPointerDown = true;
+    locked = null;
+    el.style.transition = 'none';
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    if (!isPointerDown) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (locked === null) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        locked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        if (locked === 'h') el.setPointerCapture(e.pointerId);
+      }
+    }
+    if (locked !== 'h') return;
+    currentX = Math.max(-SWIPE_INDICATOR_MAX, Math.min(SWIPE_INDICATOR_MAX, dx));
+    el.style.transform = `translateX(${currentX}px)`;
+    if (currentX > 20) {
+      el.classList.add('swiping-right');
+      el.classList.remove('swiping-left');
+    } else if (currentX < -20) {
+      el.classList.add('swiping-left');
+      el.classList.remove('swiping-right');
+    } else {
+      el.classList.remove('swiping-right', 'swiping-left');
+    }
+  });
+
+  const endHandler = (e) => {
+    if (!isPointerDown) return;
+    isPointerDown = false;
+    if (locked === 'h') {
+      // RTL: swipe right (positive dx) = swipe toward right side = "done"
+      if (currentX > threshold) {
+        reset();
+        setTimeout(() => onSwipeRight && onSwipeRight(), 50);
+      } else if (currentX < -threshold) {
+        reset();
+        setTimeout(() => onSwipeLeft && onSwipeLeft(), 50);
+      } else {
+        reset();
+      }
+    }
+    currentX = 0;
+    locked = null;
+  };
+
+  el.addEventListener('pointerup', endHandler);
+  el.addEventListener('pointercancel', endHandler);
+  el.addEventListener('pointerleave', endHandler);
+}
+
+function pushToTomorrow(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  const [y, m, d] = task.date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + 1);
+  task.date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  task.isMit = false;
+  buzz(15);
+  saveState();
+  renderAll();
+  toast('נדחה למחר');
 }
 
 function toggleTaskDone(id) {
@@ -592,29 +777,36 @@ $$('.goals-add').forEach(btn => {
   });
 });
 
-// ============ Week View ============
+// ============ Week View (7 days FORWARD from today) ============
 function renderWeek() {
   const grid = $('#week-grid');
   grid.innerHTML = '';
-  const days = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  const dayShort = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+  const monthShort = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'];
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const todayStrVal = todayStr();
-  const start = new Date(today);
-  start.setDate(today.getDate() - today.getDay());
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const isToday = dateStr === todayStrVal;
+    const isTomorrow = i === 1;
 
     const col = document.createElement('div');
-    col.className = 'week-day' + (dateStr === todayStrVal ? ' today' : '');
+    col.className = 'week-day' + (isToday ? ' today' : '');
+
+    let labelText = dayShort[d.getDay()];
+    if (isToday) labelText = 'היום';
+    else if (isTomorrow) labelText = 'מחר';
 
     const header = document.createElement('div');
     header.className = 'week-day-header';
     header.innerHTML = `
-      <div class="week-day-name">${days[i]}</div>
-      <div class="week-day-num">${d.getDate()}</div>
+      <div class="week-day-name">${labelText}</div>
+      <div class="week-day-num">${d.getDate()}<span class="week-day-month"> ${monthShort[d.getMonth()]}</span></div>
     `;
     col.appendChild(header);
 
@@ -622,15 +814,54 @@ function renderWeek() {
       .filter(t => t.date === dateStr)
       .sort((a, b) => timeToMin(a.startTime) - timeToMin(b.startTime));
 
-    dayTasks.forEach(task => {
-      const t = document.createElement('div');
-      t.className = 'week-day-task';
-      t.textContent = `${task.startTime || ''} ${task.title}`.trim();
-      col.appendChild(t);
-    });
+    if (dayTasks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'week-day-empty';
+      empty.textContent = '·';
+      col.appendChild(empty);
+    } else {
+      dayTasks.forEach(task => {
+        const t = document.createElement('div');
+        t.className = 'week-day-task' + (task.done ? ' done' : '') + (task.isMit ? ' mit' : '');
+        t.innerHTML = `
+          ${task.startTime ? `<span class="week-task-time">${task.startTime}</span>` : ''}
+          <span class="week-task-title">${escapeHtml(task.title)}</span>
+        `;
+        col.appendChild(t);
+      });
+    }
+
+    // Quick add button for that day
+    const addBtn = document.createElement('button');
+    addBtn.className = 'week-day-add';
+    addBtn.textContent = '+';
+    addBtn.title = `הוסף ל${labelText}`;
+    addBtn.addEventListener('click', () => quickAddOnDate(dateStr, labelText));
+    col.appendChild(addBtn);
 
     grid.appendChild(col);
   }
+}
+
+function quickAddOnDate(dateStr, labelText) {
+  const title = prompt(`משימה חדשה ל${labelText}:`);
+  if (!title || !title.trim()) return;
+  state.tasks.push({
+    id: uuid(),
+    title: title.trim(),
+    date: dateStr,
+    startTime: '09:00',
+    endTime: '10:00',
+    category: 'work',
+    isMit: false,
+    done: false,
+    createdAt: Date.now(),
+  });
+  buzz(15);
+  saveState();
+  renderAll();
+  renderWeek();
+  toast(`נוסף ל${labelText}`);
 }
 
 // ============ Tabs Navigation ============
@@ -948,6 +1179,7 @@ document.addEventListener('keydown', (e) => {
     if ($('#modal-backdrop').classList.contains('open')) closeModal();
     if ($('#inbox-action-backdrop').classList.contains('open')) closeInboxAction();
     if ($('#weekly-summary-backdrop').classList.contains('open')) closeWeekly();
+    if ($('#shutdown-backdrop').classList.contains('open')) closeShutdown();
   }
 });
 
@@ -961,15 +1193,124 @@ function renderAll() {
   renderGoals();
 }
 
+// ============ Shutdown Ritual ============
+const SHUTDOWN_HOUR = 21; // 21:00 onwards
+
+function maybeShowShutdownBanner() {
+  const now = new Date();
+  const today = todayStr();
+  if (now.getHours() < SHUTDOWN_HOUR) {
+    $('#shutdown-banner').style.display = 'none';
+    return;
+  }
+  if (state.shutdowns && state.shutdowns[today]) {
+    $('#shutdown-banner').style.display = 'none';
+    return;
+  }
+  if (sessionStorage.getItem('shutdown-dismissed-today') === today) return;
+  $('#shutdown-banner').style.display = 'flex';
+}
+
+$('#shutdown-banner').addEventListener('click', (e) => {
+  if (e.target.closest('#shutdown-dismiss')) return;
+  openShutdownModal();
+});
+
+$('#shutdown-dismiss').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('#shutdown-banner').style.display = 'none';
+  sessionStorage.setItem('shutdown-dismissed-today', todayStr());
+});
+
+let selectedMood = null;
+
+function openShutdownModal() {
+  selectedMood = null;
+  $$('.mood-btn').forEach(b => b.classList.remove('selected'));
+  $('#shutdown-note').value = '';
+
+  // Compute today's stats
+  const today = todayStr();
+  const todays = state.tasks.filter(t => t.date === today);
+  const done = todays.filter(t => t.done).length;
+  const mit = todays.find(t => t.isMit);
+  const mitDone = mit && mit.done;
+
+  const catMinutes = {};
+  todays.filter(t => t.done && t.startTime && t.endTime).forEach(t => {
+    const min = timeToMin(t.endTime) - timeToMin(t.startTime);
+    if (min > 0) catMinutes[t.category || 'other'] = (catMinutes[t.category || 'other'] || 0) + min;
+  });
+  const topCat = Object.entries(catMinutes).sort((a, b) => b[1] - a[1])[0];
+
+  let statsHtml = `
+    <div class="shutdown-stat-row">
+      <span class="shutdown-stat-label">משימות הושלמו</span>
+      <span class="shutdown-stat-value">${done}/${todays.length}</span>
+    </div>
+    <div class="shutdown-stat-row">
+      <span class="shutdown-stat-label">MIT</span>
+      <span class="shutdown-stat-value">${mit ? (mitDone ? '✓ הושלם' : 'לא הושלם') : '—'}</span>
+    </div>
+  `;
+  if (topCat) {
+    const hours = (topCat[1] / 60).toFixed(1).replace(/\.0$/, '');
+    statsHtml += `
+      <div class="shutdown-stat-row">
+        <span class="shutdown-stat-label">הכי הרבה זמן</span>
+        <span class="shutdown-stat-value">${(CATEGORIES[topCat[0]] && CATEGORIES[topCat[0]].name) || topCat[0]} · ${hours}ש׳</span>
+      </div>
+    `;
+  }
+  $('#shutdown-stats').innerHTML = statsHtml;
+
+  $('#shutdown-backdrop').classList.add('open');
+  $('#shutdown-banner').style.display = 'none';
+}
+
+$$('.mood-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMood = parseInt(btn.dataset.mood);
+    buzz(10);
+  });
+});
+
+$('#shutdown-close').addEventListener('click', closeShutdown);
+$('#shutdown-backdrop').addEventListener('click', (e) => {
+  if (e.target === $('#shutdown-backdrop')) closeShutdown();
+});
+
+function closeShutdown() {
+  $('#shutdown-backdrop').classList.remove('open');
+}
+
+$('#shutdown-save').addEventListener('click', () => {
+  const today = todayStr();
+  state.shutdowns = state.shutdowns || {};
+  state.shutdowns[today] = {
+    mood: selectedMood,
+    note: $('#shutdown-note').value.trim() || null,
+    savedAt: new Date().toISOString(),
+  };
+  saveState();
+  closeShutdown();
+  buzz([20, 30, 20]);
+  toast('🌙 לילה טוב, טהר');
+});
+
 loadState();
 renderAll();
 maybeShowWeeklySummary();
+maybeShowShutdownBanner();
 
 setInterval(() => {
   renderHero();
+  maybeShowShutdownBanner();
 }, 60_000);
 
-// Debug helper: window.tohar.forceWeekly() to test the summary
+// Debug helpers
 window.tohar = {
   state: () => state,
   forceWeekly: () => {
@@ -982,6 +1323,7 @@ window.tohar = {
     renderWeeklySummary(stats);
     $('#weekly-summary-backdrop').classList.add('open');
   },
+  forceShutdown: () => openShutdownModal(),
   reset: () => {
     if (confirm('למחוק את כל הנתונים?')) {
       localStorage.removeItem(STORAGE_KEY);
