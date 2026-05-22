@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="description" content="Tohar HQ — מרכז השליטה האישי של טהר">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tohar HQ">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <title>Tohar HQ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E⚡%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <!-- Background visuals -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="bg-grid"></div>
+
+  <main class="container">
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span id="hero-date">—</span>
+      </div>
+      <h1 class="hero-title">
+        <span class="hero-pre" id="hero-greeting">בוקר טוב, טהר</span>
+        <span class="gradient-text">מה היום שלי?</span>
+      </h1>
+    </header>
+
+    <!-- STATS -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">✓</div>
+        <div class="stat-value" id="stat-tasks-done">0</div>
+        <div class="stat-label">משימות סומנו</div>
+        <div class="stat-sub" id="stat-tasks-total">מתוך 0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value" id="stat-next-time">—</div>
+        <div class="stat-label">האירוע הבא</div>
+        <div class="stat-sub" id="stat-next-name">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱</div>
+        <div class="stat-value" id="stat-hours">0</div>
+        <div class="stat-label">שעות מתוכננות</div>
+        <div class="stat-sub">היום</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">streak</div>
+        <div class="stat-sub">ימים רצופים</div>
+      </div>
+    </section>
+
+    <!-- MIT — Most Important Task -->
+    <section class="mit-card" id="mit-card">
+      <div class="mit-label">
+        <span class="mit-icon">🎯</span>
+        המשימה הכי חשובה היום
+      </div>
+      <div class="mit-empty" id="mit-empty">
+        <p>עדיין לא בחרת MIT.</p>
+        <p class="mit-empty-sub">מתוך המשימות שלך — תסמן את הכוכב ⭐ ליד הכי חשובה.</p>
+      </div>
+      <div class="mit-content" id="mit-content" style="display:none;">
+        <div class="mit-task" id="mit-task">—</div>
+        <div class="mit-meta" id="mit-meta">—</div>
+        <button class="mit-btn" id="mit-btn">סמן כבוצע</button>
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="tabs">
+      <button class="tab active" data-view="today">
+        <span class="tab-icon">📅</span>
+        <span>היום</span>
+      </button>
+      <button class="tab" data-view="inbox">
+        <span class="tab-icon">📥</span>
+        <span>Inbox</span>
+        <span class="tab-progress" id="inbox-count">0</span>
+      </button>
+      <button class="tab" data-view="goals">
+        <span class="tab-icon">🎯</span>
+        <span>מטרות</span>
+      </button>
+      <button class="tab" data-view="week">
+        <span class="tab-icon">🗓</span>
+        <span>שבוע</span>
+      </button>
+    </nav>
+
+    <!-- TODAY PANEL -->
+    <section class="tab-panel active" id="panel-today">
+      <!-- Timeline -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-icon">⏰</div>
+          <div>
+            <div class="panel-eyebrow">TIMELINE</div>
+            <h2 class="panel-title">לוח הזמנים שלי</h2>
+            <p class="panel-desc">המשימות והאירועים שלך לאורך היום</p>
+          </div>
+        </div>
+        <div class="timeline" id="timeline">
+          <!-- Timeline rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="panel-card" style="margin-top: 18px;">
+        <div class="panel-header">
+          <div class="panel-icon">✅</div>
+          <div>
+            <div class="panel-eyebrow">TASKS</div>
+            <h2 class="panel-title">משימות היום</h2>
+            <p class="panel-desc">תסמן ⭐ למשימה הכי חשובה</p>
+          </div>
+        </div>
+        <div class="task-list-hq" id="task-list">
+          <!-- Tasks rendered by JS -->
+        </div>
+        <div class="empty-state" id="tasks-empty" style="display: none;">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">יום ריק</div>
+          <div class="empty-sub">תזרוק ל-Inbox מה שעולה לך לראש, או תוסיף משימה ישירות 👇</div>
+        </div>
+      </div>
+
+      <!-- Daily journal -->
+      <details class="journal-card">
+        <summary>
+          <span class="journal-icon">📓</span>
+          <span>היומן של היום</span>
+          <span class="journal-toggle">▼</span>
+        </summary>
+        <textarea class="journal-textarea" id="journal-text" placeholder="מה עבר עליי היום? מחשבות, רעיונות, תובנות..."></textarea>
+      </details>
+    </section>
+
+    <!-- INBOX PANEL -->
+    <section class="tab-panel" id="panel-inbox">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-icon">📥</div>
+          <div>
+            <div class="panel-eyebrow">INBOX</div>
+            <h2 class="panel-title">תזרוק לפה</h2>
+            <p class="panel-desc">כל מה שעולה לך לראש — תזרוק בלי לחשוב. נסדר אחר כך.</p>
+          </div>
+        </div>
+
+        <form class="inbox-quick" id="inbox-form">
+          <input type="text" id="inbox-input" placeholder="מה עולה לך לראש? תכתוב ולחץ Enter..." autocomplete="off">
+          <button type="submit">+</button>
+        </form>
+
+        <div class="inbox-list" id="inbox-list">
+          <!-- Inbox items rendered by JS -->
+        </div>
+        <div class="empty-state" id="inbox-empty">
+          <div class="empty-icon">📭</div>
+          <div class="empty-text">ה-Inbox ריק</div>
+          <div class="empty-sub">כשעולה לך משהו לראש — תזרוק לפה. בלי לחשוב על שעה או קטגוריה.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GOALS PANEL -->
+    <section class="tab-panel" id="panel-goals">
+      <!-- Dreams -->
+      <div class="panel-card goals-card goals-dreams">
+        <div class="panel-header">
+          <div class="panel-icon">🌟</div>
+          <div>
+            <div class="panel-eyebrow">DREAMS · ללא תאריך</div>
+            <h2 class="panel-title">החלומות שלי</h2>
+            <p class="panel-desc">החזון. למה אני עושה את הכל.</p>
+          </div>
+        </div>
+        <div class="goals-list" id="goals-dream"></div>
+        <button class="goals-add" data-scope="dream">+ הוסף חלום</button>
+      </div>
+
+      <!-- Year -->
+      <div class="panel-card goals-card goals-year">
+        <div class="panel-header">
+          <div class="panel-icon">🎯</div>
+          <div>
+            <div class="panel-eyebrow">YEAR · 2026</div>
+            <h2 class="panel-title">מטרות שנה</h2>
+            <p class="panel-desc">מה אני רוצה להגיע אליו עד סוף השנה</p>
+          </div>
+        </div>
+        <div class="goals-list" id="goals-year"></div>
+        <button class="goals-add" data-scope="year">+ הוסף מטרת שנה</button>
+      </div>
+
+      <!-- 3 months -->
+      <div class="panel-card goals-card goals-3month">
+        <div class="panel-header">
+          <div class="panel-icon">🗓</div>
+          <div>
+            <div class="panel-eyebrow">3 MONTHS · עד אוגוסט 2026</div>
+            <h2 class="panel-title">מטרות 3 חודשים</h2>
+            <p class="panel-desc">המטרות הקרובות שלי</p>
+          </div>
+        </div>
+        <div class="goals-list" id="goals-3month"></div>
+        <button class="goals-add" data-scope="3month">+ הוסף מטרה</button>
+      </div>
+
+      <!-- Week -->
+      <div class="panel-card goals-card goals-week">
+        <div class="panel-header">
+          <div class="panel-icon">📅</div>
+          <div>
+            <div class="panel-eyebrow">WEEK</div>
+            <h2 class="panel-title">מטרות השבוע</h2>
+            <p class="panel-desc">מה אני סוגר השבוע</p>
+          </div>
+        </div>
+        <div class="goals-list" id="goals-week"></div>
+        <button class="goals-add" data-scope="week">+ הוסף מטרת שבוע</button>
+      </div>
+    </section>
+
+    <!-- WEEK PANEL -->
+    <section class="tab-panel" id="panel-week">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-icon">🗓</div>
+          <div>
+            <div class="panel-eyebrow">WEEK VIEW</div>
+            <h2 class="panel-title">השבוע שלי</h2>
+            <p class="panel-desc">תצוגה של 7 הימים הקרובים</p>
+          </div>
+        </div>
+        <div class="week-grid" id="week-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FLOATING ACTION BUTTON -->
+  <button class="fab" id="fab" aria-label="הוסף משימה או פריט ל-Inbox">
+    <span class="fab-icon">+</span>
+  </button>
+
+  <!-- QUICK ADD MODAL -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3>הוסף מהיר</h3>
+        <button class="modal-close" id="modal-close">×</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-modal-tab="inbox">📥 ל-Inbox</button>
+        <button class="modal-tab" data-modal-tab="task">📅 משימה עם שעה</button>
+      </div>
+
+      <form id="modal-form">
+        <input type="text" id="modal-title" placeholder="מה צריך לעשות?" required>
+
+        <div class="modal-task-fields" id="modal-task-fields" style="display: none;">
+          <div class="modal-time-row">
+            <label>
+              <span>מ-</span>
+              <input type="time" id="modal-start-time" value="09:00">
+            </label>
+            <label>
+              <span>עד-</span>
+              <input type="time" id="modal-end-time" value="10:00">
+            </label>
+          </div>
+          <select id="modal-category">
+            <option value="work">🏢 עבודה (ONE/ONE)</option>
+            <option value="dj">🎧 DJ</option>
+            <option value="production">🎹 הפקה</option>
+            <option value="content">📱 תוכן ושיווק</option>
+            <option value="fitness">💪 כושר</option>
+            <option value="learning">📚 לימודים</option>
+            <option value="meetings">💬 פגישות</option>
+            <option value="travel">✈️ חו"ל</option>
+          </select>
+          <label class="modal-checkbox">
+            <input type="checkbox" id="modal-urgent">
+            <span>🔥 דחוף</span>
+          </label>
+        </div>
+
+        <button type="submit" class="modal-submit">שמור</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- INBOX ITEM ACTIONS MODAL -->
+  <div class="modal-backdrop" id="inbox-action-backdrop">
+    <div class="modal inbox-action-modal" role="dialog">
+      <div class="modal-header">
+        <h3>מה לעשות עם זה?</h3>
+        <button class="modal-close" id="inbox-action-close">×</button>
+      </div>
+      <div class="inbox-action-item" id="inbox-action-item"></div>
+
+      <form id="inbox-action-form">
+        <input type="date" id="inbox-action-date">
+        <div class="modal-time-row">
+          <label>
+            <span>מ-</span>
+            <input type="time" id="inbox-action-start" value="09:00">
+          </label>
+          <label>
+            <span>עד-</span>
+            <input type="time" id="inbox-action-end" value="10:00">
+          </label>
+        </div>
+        <select id="inbox-action-category">
+          <option value="work">🏢 עבודה (ONE/ONE)</option>
+          <option value="dj">🎧 DJ</option>
+          <option value="production">🎹 הפקה</option>
+          <option value="content">📱 תוכן ושיווק</option>
+          <option value="fitness">💪 כושר</option>
+          <option value="learning">📚 לימודים</option>
+          <option value="meetings">💬 פגישות</option>
+          <option value="travel">✈️ חו"ל</option>
+        </select>
+        <button type="submit" class="modal-submit">תזמן ושמור</button>
+      </form>
+
+      <div class="inbox-action-secondary">
+        <button class="inbox-secondary-btn" id="inbox-mark-done">✓ בוצע (לא צריך לתזמן)</button>
+        <button class="inbox-secondary-btn delete" id="inbox-delete">🗑 מחק</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- INSTALL PROMPT -->
+  <div class="install-prompt" id="install-prompt" style="display: none;">
+    <div class="install-text">
+      <div class="install-title">תוסיף אותי למסך הבית 📱</div>
+      <div class="install-sub">תוכל לפתוח כמו אפליקציה אמיתית</div>
+    </div>
+    <button class="install-btn" id="install-btn">להוסיף</button>
+    <button class="install-dismiss" id="install-dismiss">×</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

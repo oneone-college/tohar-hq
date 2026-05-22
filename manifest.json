@@ -1,0 +1,27 @@
+{
+  "name": "Tohar HQ",
+  "short_name": "Tohar HQ",
+  "description": "מרכז השליטה האישי של טהר — משימות, מטרות, וזמן.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07070d",
+  "theme_color": "#0a0a0f",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"]
+}

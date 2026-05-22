@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="100%" stop-color="#1a0a2a"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b34dff"/>
+      <stop offset="50%" stop-color="#ff4d8d"/>
+      <stop offset="100%" stop-color="#ff8c4d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#b34dff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#b34dff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners (maskable safe) -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle radial glow behind bolt -->
+  <circle cx="256" cy="256" r="180" fill="url(#glow)"/>
+
+  <!-- Lightning bolt — centered, ~55% of canvas (safe zone for maskable) -->
+  <g filter="url(#softGlow)" transform="translate(256, 256)">
+    <path d="M 30 -130 L -50 30 L -10 30 L -30 130 L 50 -30 L 10 -30 Z"
+          fill="url(#boltGrad)"
+          stroke="#fff"
+          stroke-width="2"
+          stroke-opacity="0.15"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- Tiny accent dots -->
+  <circle cx="120" cy="120" r="3" fill="#4dd2ff" opacity="0.4"/>
+  <circle cx="400" cy="160" r="2" fill="#ffc850" opacity="0.5"/>
+  <circle cx="380" cy="400" r="3" fill="#b34dff" opacity="0.5"/>
+  <circle cx="140" cy="380" r="2" fill="#ff4d8d" opacity="0.4"/>
+</svg>

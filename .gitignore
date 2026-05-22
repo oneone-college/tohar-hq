@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+tokens/
+credentials.json
+*.key
+*.pem
+.DS_Store
+*.log
+.vercel
+.next/
+dist/
+build/
+.claude/

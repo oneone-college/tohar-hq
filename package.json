@@ -1,0 +1,11 @@
+{
+  "name": "tohar-hq",
+  "version": "0.1.0",
+  "description": "Tohar HQ — מרכז השליטה האישי של טהר",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  },
+  "license": "UNLICENSED"
+}
