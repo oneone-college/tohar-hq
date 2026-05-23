@@ -2,8 +2,8 @@
    Network-first for HTML/JS/CSS (always fresh).
    Cache-first for assets (fonts, icons). */
 
-const CACHE_VERSION = 'tohar-hq-v7';
-const ASSET_CACHE = 'tohar-hq-assets-v7';
+const CACHE_VERSION = 'tohar-hq-v8';
+const ASSET_CACHE = 'tohar-hq-assets-v8';
 
 const APP_SHELL = [
   '/',

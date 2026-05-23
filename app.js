@@ -2124,6 +2124,93 @@ $('#shutdown-save').addEventListener('click', () => {
   }, 400);
 });
 
+// ============ Demo Data ============
+function loadDemoData() {
+  const today = todayStr();
+  const dateBack = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return dateStrOf(d);
+  };
+  const dateForward = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return dateStrOf(d);
+  };
+
+  state.tasks = [
+    // Today
+    { id: uuid(), title: 'לסגור עם רום על האתר', date: today, startTime: '10:00', endTime: '11:30', category: 'work', isMit: true, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'סשן הפקה — עבודה על המאשאפ', date: today, startTime: '14:00', endTime: '16:00', category: 'production', isMit: false, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אימון רגליים', date: today, startTime: '17:00', endTime: '18:30', category: 'fitness', isMit: false, done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'צילום סטורי לאינסטה', date: today, startTime: '19:00', endTime: '19:30', category: 'content', isMit: false, done: false, createdAt: Date.now() },
+
+    // Yesterday — completed
+    { id: uuid(), title: 'הזמנה לציוד DJ לחתונת אהוד', date: dateBack(1), startTime: '10:00', endTime: '11:00', category: 'dj', isMit: true, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אימון חזה', date: dateBack(1), startTime: '17:00', endTime: '18:00', category: 'fitness', isMit: false, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אייבלטון — עריכת stem', date: dateBack(1), startTime: '20:00', endTime: '22:00', category: 'production', isMit: false, done: true, createdAt: Date.now() },
+
+    // 2 days ago
+    { id: uuid(), title: 'פגישה עם רום', date: dateBack(2), startTime: '11:00', endTime: '12:00', category: 'meetings', isMit: true, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אימון גב', date: dateBack(2), startTime: '17:00', endTime: '18:00', category: 'fitness', isMit: false, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אייבלטון — לימוד פלאגין', date: dateBack(2), startTime: '20:00', endTime: '22:30', category: 'production', isMit: false, done: true, createdAt: Date.now() },
+
+    // 3 days ago
+    { id: uuid(), title: 'תיאום השכרות לסופ"ש', date: dateBack(3), startTime: '10:00', endTime: '12:00', category: 'work', isMit: true, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אירוע DJ חתונת ליאור ויעל', date: dateBack(3), startTime: '20:00', endTime: '23:30', category: 'dj', isMit: false, done: true, createdAt: Date.now() },
+
+    // 4 days ago
+    { id: uuid(), title: 'לקרוא על Claude Code', date: dateBack(4), startTime: '10:00', endTime: '11:00', category: 'learning', isMit: true, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'אימון רגליים', date: dateBack(4), startTime: '17:00', endTime: '18:30', category: 'fitness', isMit: false, done: true, createdAt: Date.now() },
+    { id: uuid(), title: 'הפקה — מאשאפ של אבני חושן', date: dateBack(4), startTime: '20:00', endTime: '23:00', category: 'production', isMit: false, done: true, createdAt: Date.now() },
+
+    // Tomorrow
+    { id: uuid(), title: 'פגישה עם עוז על המאשאפ', date: dateForward(1), startTime: '11:00', endTime: '12:30', category: 'production', isMit: false, done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'צילום רילס לאינסטה', date: dateForward(1), startTime: '15:00', endTime: '16:00', category: 'content', isMit: false, done: false, createdAt: Date.now() },
+
+    // 2 days forward
+    { id: uuid(), title: 'אירוע DJ — בר מצווה', date: dateForward(2), startTime: '20:00', endTime: '23:30', category: 'dj', isMit: false, done: false, createdAt: Date.now() },
+  ];
+
+  state.inbox = [
+    { id: uuid(), content: 'להזמין כבל XLR חדש לאירוע השבוע', createdAt: Date.now() - 600000 },
+    { id: uuid(), content: 'רעיון לסטורי - behind the scenes בחתונה', createdAt: Date.now() - 3600000 },
+    { id: uuid(), content: 'לדבר עם רום על שיפור הכרטיסי ביקור', createdAt: Date.now() - 7200000 },
+    { id: uuid(), content: 'לסיים את ההפקה של עומר אדם', createdAt: Date.now() - 14400000 },
+  ];
+
+  state.goals = [
+    { id: uuid(), title: 'רכב TRX 🚗', scope: 'dream', done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'כלב גולדן רטריבר 🐕', scope: 'dream', done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'אלבום מקורי משלי 🎵', scope: 'dream', done: false, createdAt: Date.now() },
+
+    { id: uuid(), title: 'עצמאות מלאה בבניית כלים עם קלוד', scope: 'year', done: false, createdAt: Date.now() },
+    { id: uuid(), title: '15+ אירועי DJ אישיים השנה', scope: 'year', done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'הפקה ראשונה משלי בסט', scope: 'year', done: true, createdAt: Date.now() },
+
+    { id: uuid(), title: 'האתר עולה לאוויר', scope: '3month', done: false, createdAt: Date.now() },
+    { id: uuid(), title: '10+ פניות לאירועים', scope: '3month', done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'סיום מסע ההפקה', scope: '3month', done: false, createdAt: Date.now() },
+
+    { id: uuid(), title: 'סשן עם עוז', scope: 'week', done: true, createdAt: Date.now() },
+    { id: uuid(), title: '3 פוסטים באינסטה', scope: 'week', done: false, createdAt: Date.now() },
+    { id: uuid(), title: 'אימון 4 פעמים', scope: 'week', done: false, createdAt: Date.now() },
+  ];
+
+  state.shutdowns = state.shutdowns || {};
+  state.shutdowns[dateBack(1)] = {
+    mood: 4,
+    note: 'יום פרודוקטיבי, עוז ואני מתקדמים יפה במאשאפ',
+    savedAt: new Date().toISOString(),
+  };
+
+  saveState();
+  recomputeStreaks();
+  saveState();
+  renderAll();
+  toast('✨ דאטה לדוגמה נטענה');
+}
+
 // ============ First-Run Help ============
 function maybeShowFirstRunHelp() {
   const dismissed = localStorage.getItem('firstrun-dismissed');
@@ -2149,7 +2236,11 @@ document.querySelectorAll('.firstrun-card').forEach(card => {
   card.addEventListener('click', () => {
     const action = card.dataset.action;
     buzz(10);
-    if (action === 'morning') openMorningRitual();
+    if (action === 'demo') {
+      loadDemoData();
+      $('#firstrun-help').classList.add('hidden');
+    }
+    else if (action === 'morning') openMorningRitual();
     else if (action === 'cmd') openCmdBar();
     else if (action === 'nl') {
       $('#fab').click();
@@ -2195,6 +2286,7 @@ window.tohar = {
   forceMorning: () => openMorningRitual(),
   forceDone: () => showDoneForDay(),
   forceCmd: () => openCmdBar(),
+  demo: () => loadDemoData(),
   reset: () => {
     if (confirm('למחוק את כל הנתונים?')) {
       localStorage.removeItem(STORAGE_KEY);
