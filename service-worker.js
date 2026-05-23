@@ -1,8 +1,8 @@
 /* Tohar HQ — Service Worker v10
    Aggressive update: always fresh, never cache HTML/JS/CSS. */
 
-const CACHE_VERSION = 'tohar-hq-v10';
-const ASSET_CACHE = 'tohar-hq-assets-v10';
+const CACHE_VERSION = 'tohar-hq-v11';
+const ASSET_CACHE = 'tohar-hq-assets-v11';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting(); // Activate immediately
