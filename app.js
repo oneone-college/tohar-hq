@@ -1527,16 +1527,19 @@ $('#install-dismiss').addEventListener('click', () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js').then((reg) => {
-      // Check for updates every minute while page is open
-      setInterval(() => reg.update(), 60_000);
+      // Check for updates every 30 seconds while page is open
+      setInterval(() => reg.update(), 30_000);
+
+      // Force update check on every page load
+      reg.update();
 
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version available
-            showUpdateBanner(newWorker);
+            // Auto-activate immediately, don't wait for user
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
@@ -1548,6 +1551,13 @@ if ('serviceWorker' in navigator) {
       if (refreshing) return;
       refreshing = true;
       window.location.reload();
+    });
+
+    // Listen for RELOAD messages from SW
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'RELOAD') {
+        window.location.reload();
+      }
     });
   });
 }
