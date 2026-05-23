@@ -2124,8 +2124,51 @@ $('#shutdown-save').addEventListener('click', () => {
   }, 400);
 });
 
+// ============ First-Run Help ============
+function maybeShowFirstRunHelp() {
+  const dismissed = localStorage.getItem('firstrun-dismissed');
+  const totalTasks = state.tasks.length;
+
+  const el = $('#firstrun-help');
+  if (!el) return;
+
+  // Hide if user has 10+ tasks (they know the app) or dismissed it
+  if (dismissed || totalTasks >= 10) {
+    el.classList.add('hidden');
+  } else {
+    el.classList.remove('hidden');
+  }
+}
+
+$('#firstrun-dismiss').addEventListener('click', () => {
+  $('#firstrun-help').classList.add('hidden');
+  localStorage.setItem('firstrun-dismissed', '1');
+});
+
+document.querySelectorAll('.firstrun-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const action = card.dataset.action;
+    buzz(10);
+    if (action === 'morning') openMorningRitual();
+    else if (action === 'cmd') openCmdBar();
+    else if (action === 'nl') {
+      $('#fab').click();
+      setTimeout(() => {
+        const input = $('#modal-title');
+        if (input) {
+          input.value = 'מחר ב-10 ';
+          input.focus();
+          // Trigger NL parse
+          input.dispatchEvent(new Event('input'));
+        }
+      }, 200);
+    }
+  });
+});
+
 loadState();
 renderAll();
+maybeShowFirstRunHelp();
 maybeShowMorningRitual();
 maybeShowWeeklySummary();
 maybeShowShutdownBanner();

@@ -88,6 +88,86 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
+/* ============ First-Run Help ============ */
+.firstrun-help {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--r-lg);
+  padding: 20px 16px 16px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.5s var(--ease-out) 0.05s both;
+}
+
+.firstrun-help.hidden { display: none; }
+
+.firstrun-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.firstrun-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.firstrun-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 8px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  font-family: inherit;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.firstrun-card:hover {
+  border-color: var(--border-gold);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.firstrun-icon {
+  font-size: 22px;
+}
+
+.firstrun-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.firstrun-card-sub {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.firstrun-dismiss {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
 /* ============ Identity Statement ============ */
 .identity-statement {
   font-family: 'Inter', sans-serif;
