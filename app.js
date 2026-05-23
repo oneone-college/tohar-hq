@@ -431,6 +431,7 @@ function showRingsClosed(taskCount, totalMin) {
   overlay.style.display = 'flex';
 
   buzz([40, 50, 40, 80, 40, 50, 40]);
+  if (window.particleBurst) window.particleBurst();
 
   // Heavy confetti for the 3-rings moment
   for (let i = 0; i < 100; i++) {
@@ -678,6 +679,7 @@ function completeMIT(e) {
   renderAll();
 
   buzz([30, 50, 30, 80, 30, 50, 30]);
+  if (window.particleBurst) window.particleBurst();
   showMITCelebration(mit.title);
 }
 
@@ -1623,6 +1625,148 @@ $('#install-dismiss').addEventListener('click', () => {
   $('#install-prompt').style.display = 'none';
   localStorage.setItem('install-dismissed', '1');
 });
+
+// ============ Ambient Particles (Canvas, lightweight) ============
+(function initParticles() {
+  const canvas = document.getElementById('webgl-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Skip if reduced motion preferred
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Build particles — sparse, large soft glows
+  const particleCount = Math.min(28, Math.floor((w * h) / 28000));
+  const particles = [];
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: (Math.random() - 0.5) * 0.15,
+      r: 1.2 + Math.random() * 1.8,
+      glow: 30 + Math.random() * 50,
+      alpha: 0.3 + Math.random() * 0.5,
+      hue: 38 + Math.random() * 12, // honey range
+    });
+  }
+
+  // Device orientation parallax
+  let tiltX = 0, tiltY = 0;
+  let targetTiltX = 0, targetTiltY = 0;
+
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.gamma !== null && e.beta !== null) {
+        targetTiltX = (e.gamma || 0) * 0.2;  // left-right tilt
+        targetTiltY = (e.beta - 45 || 0) * 0.1;  // front-back tilt
+      }
+    }, true);
+  }
+
+  // Mouse parallax (desktop fallback)
+  window.addEventListener('mousemove', (e) => {
+    targetTiltX = (e.clientX / w - 0.5) * 20;
+    targetTiltY = (e.clientY / h - 0.5) * 20;
+  });
+
+  let lastTime = performance.now();
+  let runId = null;
+  let bursting = false;
+
+  function frame(now) {
+    const dt = Math.min(50, now - lastTime);
+    lastTime = now;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Smooth tilt
+    tiltX += (targetTiltX - tiltX) * 0.03;
+    tiltY += (targetTiltY - tiltY) * 0.03;
+
+    for (const p of particles) {
+      p.x += p.vx * dt * 0.06;
+      p.y += p.vy * dt * 0.06;
+
+      // Wrap edges
+      if (p.x < -p.glow) p.x = w + p.glow;
+      if (p.x > w + p.glow) p.x = -p.glow;
+      if (p.y < -p.glow) p.y = h + p.glow;
+      if (p.y > h + p.glow) p.y = -p.glow;
+
+      // Draw glow
+      const dx = p.x + tiltX;
+      const dy = p.y + tiltY;
+
+      const grad = ctx.createRadialGradient(dx, dy, 0, dx, dy, p.glow);
+      const burstMult = bursting ? 2.5 : 1;
+      grad.addColorStop(0, `hsla(${p.hue}, 65%, 65%, ${p.alpha * burstMult})`);
+      grad.addColorStop(0.4, `hsla(${p.hue}, 60%, 55%, ${p.alpha * 0.4 * burstMult})`);
+      grad.addColorStop(1, `hsla(${p.hue}, 60%, 50%, 0)`);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(dx, dy, p.glow, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core dot
+      ctx.fillStyle = `hsla(${p.hue}, 80%, 78%, ${Math.min(1, p.alpha * 1.5 * burstMult)})`;
+      ctx.beginPath();
+      ctx.arc(dx, dy, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    runId = requestAnimationFrame(frame);
+  }
+
+  runId = requestAnimationFrame(frame);
+
+  // Public: burst function for celebrations
+  window.particleBurst = () => {
+    bursting = true;
+    // Boost velocities briefly
+    particles.forEach(p => {
+      p.vx = (Math.random() - 0.5) * 1.5;
+      p.vy = (Math.random() - 0.5) * 1.5;
+    });
+    setTimeout(() => {
+      bursting = false;
+      particles.forEach(p => {
+        p.vx = (Math.random() - 0.5) * 0.15;
+        p.vy = (Math.random() - 0.5) * 0.15;
+      });
+    }, 2000);
+  };
+
+  // Pause when hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && runId) {
+      cancelAnimationFrame(runId);
+      runId = null;
+    } else if (!document.hidden && !runId) {
+      lastTime = performance.now();
+      runId = requestAnimationFrame(frame);
+    }
+  });
+})();
 
 // ============ Service Worker + Auto-Update ============
 if ('serviceWorker' in navigator) {

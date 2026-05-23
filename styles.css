@@ -139,6 +139,16 @@ body::after {
   75% { transform: translate(15px, 25px) rotate(0.2deg); }
 }
 
+/* ---------- WebGL particles canvas ---------- */
+#webgl-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+
 /* ---------- App container ---------- */
 .app {
   position: relative;
