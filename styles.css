@@ -104,7 +104,7 @@ body {
   letter-spacing: -0.005em;
 }
 
-/* ---------- Ambient atmosphere — aurora-like ---------- */
+/* ---------- Ambient atmosphere — aurora-like (adaptive) ---------- */
 body::before {
   content: '';
   position: fixed;
@@ -116,6 +116,26 @@ body::before {
   pointer-events: none;
   z-index: 0;
   animation: aurora 28s ease-in-out infinite;
+  transition: opacity 1s var(--ease-out-expo);
+}
+
+/* Time-based atmospheric variants */
+[data-time="morning"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255, 175, 110, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 30%, rgba(218, 185, 116, 0.06), transparent 60%);
+}
+
+[data-time="evening"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(184, 141, 62, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 30%, rgba(155, 100, 50, 0.07), transparent 60%);
+}
+
+[data-time="night"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(140, 110, 180, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 30%, rgba(218, 185, 116, 0.04), transparent 60%);
 }
 
 body::after {
@@ -2910,6 +2930,172 @@ body::after {
   letter-spacing: 0.3px;
   animation: celebrationText 1s var(--ease-out-expo) 0.75s both;
 }
+
+/* ============================================
+   YEARLY WRAPPED — Spotify-style story
+   ============================================ */
+.wrapped-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.5s var(--ease-out-expo);
+  overflow: hidden;
+}
+
+.wrapped-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, var(--honey-18), transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(184, 141, 62, 0.20), transparent 60%);
+  animation: wrappedBgShift 8s ease-in-out infinite;
+}
+
+@keyframes wrappedBgShift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -20px) scale(1.05); }
+}
+
+.wrapped-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 24px);
+  left: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  font-size: 22px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+}
+
+.wrapped-progress {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 18px);
+  left: 70px;
+  right: 24px;
+  display: flex;
+  gap: 4px;
+  z-index: 9;
+}
+
+.wrapped-progress-bar {
+  flex: 1;
+  height: 2.5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.wrapped-progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--honey);
+  transform: scaleX(0);
+  transform-origin: right;
+  border-radius: 999px;
+}
+
+.wrapped-progress-bar.active::after {
+  animation: wrappedFill 5s linear forwards;
+}
+
+.wrapped-progress-bar.done::after {
+  transform: scaleX(1);
+}
+
+@keyframes wrappedFill {
+  to { transform: scaleX(1); }
+}
+
+.wrapped-slides {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 40px;
+  max-width: 540px;
+}
+
+.wrapped-slide {
+  display: none;
+  animation: wrappedSlideIn 0.5s var(--ease-out-expo);
+}
+
+.wrapped-slide.active { display: block; }
+
+@keyframes wrappedSlideIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.wrapped-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--honey);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.wrapped-big-number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(80px, 24vw, 200px);
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin-bottom: 18px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--honey) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 60px rgba(218, 185, 116, 0.4);
+}
+
+.wrapped-title {
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.wrapped-sub {
+  font-size: 16px;
+  color: var(--text-soft);
+  letter-spacing: -0.005em;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.wrapped-tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  z-index: 6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.wrapped-tap-prev { right: 0; }
+.wrapped-tap-next { left: 0; }
 
 /* ============================================
    VIEW TRANSITIONS

@@ -1628,6 +1628,206 @@ $('#install-dismiss').addEventListener('click', () => {
   localStorage.setItem('install-dismissed', '1');
 });
 
+// ============ YEARLY WRAPPED ============
+function computeWrappedStats() {
+  const tasks = state.tasks || [];
+  const totalDone = tasks.filter(t => t.done).length;
+  const totalMin = tasks.filter(t => t.done && t.startTime && t.endTime).reduce((s, t) => {
+    return s + Math.max(0, timeToMin(t.endTime) - timeToMin(t.startTime));
+  }, 0);
+  const totalHours = Math.round(totalMin / 60);
+
+  // Category breakdown
+  const catMin = {};
+  tasks.filter(t => t.done && t.startTime && t.endTime).forEach(t => {
+    const m = timeToMin(t.endTime) - timeToMin(t.startTime);
+    if (m > 0) catMin[t.category || 'other'] = (catMin[t.category || 'other'] || 0) + m;
+  });
+  const topCat = Object.entries(catMin).sort((a, b) => b[1] - a[1])[0];
+  const topCatName = topCat ? (CATEGORIES[topCat[0]]?.name || topCat[0]) : 'עבודה';
+  const topCatHours = topCat ? Math.round(topCat[1] / 60) : 0;
+
+  // Most common MIT title
+  const mitTitles = {};
+  tasks.filter(t => t.isMit && t.done).forEach(t => {
+    mitTitles[t.title] = (mitTitles[t.title] || 0) + 1;
+  });
+  const topMit = Object.entries(mitTitles).sort((a, b) => b[1] - a[1])[0];
+  const topMitName = topMit ? topMit[0] : 'לא הוגדר';
+
+  // Most productive month
+  const monthCounts = {};
+  tasks.filter(t => t.done && t.date).forEach(t => {
+    const m = t.date.slice(0, 7);
+    monthCounts[m] = (monthCounts[m] || 0) + 1;
+  });
+  const topMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0];
+  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  const topMonthName = topMonth ? monthNames[parseInt(topMonth[0].split('-')[1]) - 1] : 'מאי';
+
+  // Best streak
+  recomputeStreaks();
+  const bestStreak = state.streaks.mitBest || 0;
+
+  // Goals achieved
+  const goalsDone = (state.goals || []).filter(g => g.done).length;
+
+  return {
+    totalDone,
+    totalHours,
+    topCatName,
+    topCatHours,
+    topMitName,
+    topMonthName,
+    bestStreak,
+    goalsDone,
+    year: new Date().getFullYear(),
+  };
+}
+
+function showWrapped() {
+  const stats = computeWrappedStats();
+
+  const slides = [
+    {
+      label: `סיכום ${stats.year}`,
+      big: '',
+      title: 'השנה שלך ב-Tohar HQ',
+      sub: 'הצצה למה שהשגת.',
+    },
+    {
+      label: 'משימות',
+      big: String(stats.totalDone),
+      title: 'משימות הושלמו',
+      sub: 'כל אחת היא צעד.',
+    },
+    {
+      label: 'זמן',
+      big: String(stats.totalHours),
+      title: `שעות של פוקוס`,
+      sub: 'ההשקעה שלך מצטברת.',
+    },
+    {
+      label: 'התחום הכי חזק',
+      big: String(stats.topCatHours),
+      title: `שעות ב${stats.topCatName}`,
+      sub: 'זה התחום שלך.',
+    },
+    {
+      label: 'הרגל',
+      big: '🔥 ' + stats.bestStreak,
+      title: 'ימי streak שיא',
+      sub: 'עקביות יוצרת תוצאות.',
+    },
+    {
+      label: 'מטרות',
+      big: String(stats.goalsDone),
+      title: 'מטרות שהשגת',
+      sub: 'חלומות הופכים למציאות.',
+    },
+    {
+      label: 'סיום',
+      big: '',
+      title: 'תודה, טהר.',
+      sub: 'שנה אחת קדימה — בוא נמשיך.',
+    },
+  ];
+
+  const container = $('#wrapped-slides');
+  container.innerHTML = '';
+  slides.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'wrapped-slide' + (i === 0 ? ' active' : '');
+    div.dataset.idx = i;
+    div.innerHTML = `
+      <div class="wrapped-label">${escapeHtml(s.label)}</div>
+      ${s.big ? `<div class="wrapped-big-number">${escapeHtml(s.big)}</div>` : ''}
+      <div class="wrapped-title">${escapeHtml(s.title)}</div>
+      <div class="wrapped-sub">${escapeHtml(s.sub)}</div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Reset progress bars
+  for (let i = 1; i <= 7; i++) {
+    const bar = document.getElementById(`wrapped-bar-${i}`);
+    if (bar) bar.classList.remove('active', 'done');
+  }
+  document.getElementById('wrapped-bar-1')?.classList.add('active');
+
+  $('#wrapped-overlay').style.display = 'flex';
+  buzz(15);
+  startWrappedTimer(0);
+}
+
+let wrappedTimer = null;
+let wrappedCurrentSlide = 0;
+function startWrappedTimer(idx) {
+  if (wrappedTimer) clearTimeout(wrappedTimer);
+  wrappedCurrentSlide = idx;
+  wrappedTimer = setTimeout(() => goWrappedSlide(idx + 1), 5000);
+}
+
+function goWrappedSlide(idx) {
+  const slides = document.querySelectorAll('.wrapped-slide');
+  if (idx >= slides.length) {
+    closeWrapped();
+    return;
+  }
+  if (idx < 0) idx = 0;
+
+  // Mark previous bar done
+  for (let i = 1; i <= idx; i++) {
+    const bar = document.getElementById(`wrapped-bar-${i}`);
+    if (bar) { bar.classList.add('done'); bar.classList.remove('active'); }
+  }
+  // Mark next bar active
+  const nextBar = document.getElementById(`wrapped-bar-${idx + 1}`);
+  if (nextBar) { nextBar.classList.add('active'); nextBar.classList.remove('done'); }
+  // Reset bars after current
+  for (let i = idx + 2; i <= 7; i++) {
+    const bar = document.getElementById(`wrapped-bar-${i}`);
+    if (bar) bar.classList.remove('active', 'done');
+  }
+
+  slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+  buzz(10);
+  startWrappedTimer(idx);
+}
+
+function closeWrapped() {
+  if (wrappedTimer) clearTimeout(wrappedTimer);
+  $('#wrapped-overlay').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('#wrapped-close')?.addEventListener('click', closeWrapped);
+  $('#wrapped-next')?.addEventListener('click', () => goWrappedSlide(wrappedCurrentSlide + 1));
+  $('#wrapped-prev')?.addEventListener('click', () => goWrappedSlide(wrappedCurrentSlide - 1));
+});
+
+// ============ ADAPTIVE UI ============
+function applyAdaptiveTheming() {
+  const hour = new Date().getHours();
+  // Adjust ambient gradients via CSS vars based on time of day
+  let warmth;
+  if (hour >= 5 && hour < 12) warmth = 'morning';      // warm orange
+  else if (hour >= 12 && hour < 18) warmth = 'day';     // neutral gold
+  else if (hour >= 18 && hour < 22) warmth = 'evening'; // amber
+  else warmth = 'night';                                 // cool gold
+
+  document.documentElement.setAttribute('data-time', warmth);
+}
+
+applyAdaptiveTheming();
+setInterval(applyAdaptiveTheming, 5 * 60 * 1000); // every 5 min
+
+// Expose to debug
+if (window.tohar) {
+  window.tohar.wrapped = () => showWrapped();
+  window.tohar.particleBurst = () => window.particleBurst && window.particleBurst();
+}
+
 // ============ Magic Plan (AI via Gemini) ============
 async function runMagicPlan() {
   const btn = document.getElementById('magic-plan-btn');
