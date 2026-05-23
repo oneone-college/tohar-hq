@@ -379,6 +379,7 @@ function renderYesterdayBridge() {
 }
 
 // ============ 3 Daily Rings ============
+let lastAllRingsClosed = null;
 function renderRings() {
   const today = todayStr();
   const todays = state.tasks.filter(t => t.date === today);
@@ -408,6 +409,55 @@ function renderRings() {
   setRing('#ring-hours', hoursPct);
   const hoursStr = (totalMin / 60).toFixed(1).replace(/\.0$/, '');
   $('#ring-hours-value').textContent = `${hoursStr}ש׳`;
+
+  // SIGNATURE: 3 rings all closed?
+  const allClosed = tasksPct >= 1 && mitDone && hoursPct >= 1 && todays.length > 0;
+  if (allClosed && lastAllRingsClosed !== today) {
+    lastAllRingsClosed = today;
+    setTimeout(() => showRingsClosed(done.length, totalMin), 800);
+  } else if (!allClosed && lastAllRingsClosed === today) {
+    lastAllRingsClosed = null;
+  }
+}
+
+function showRingsClosed(taskCount, totalMin) {
+  // Don't show if already shown today
+  if (sessionStorage.getItem('rings-closed-shown') === todayStr()) return;
+  sessionStorage.setItem('rings-closed-shown', todayStr());
+
+  const overlay = $('#rings-closed');
+  const hoursStr = (totalMin / 60).toFixed(1).replace(/\.0$/, '');
+  $('#rings-closed-sub').textContent = `${taskCount} משימות · ${hoursStr} שעות`;
+  overlay.style.display = 'flex';
+
+  buzz([40, 50, 40, 80, 40, 50, 40]);
+
+  // Heavy confetti for the 3-rings moment
+  for (let i = 0; i < 100; i++) {
+    setTimeout(() => {
+      const x = Math.random() * window.innerWidth;
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = x + 'px';
+      piece.style.top = '-20px';
+      const colors = ['#dab974', '#f0d28c', '#b88d3e', '#7a5d2e'];
+      piece.style.background = colors[i % colors.length];
+      piece.style.setProperty('--tx', ((Math.random() - 0.5) * 300) + 'px');
+      piece.style.setProperty('--ty', (window.innerHeight + 40) + 'px');
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 1400);
+    }, i * 25);
+  }
+
+  setTimeout(() => {
+    overlay.style.transition = 'opacity 0.6s';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.style.opacity = '1';
+      overlay.style.transition = '';
+    }, 600);
+  }, 5000);
 }
 
 function setRing(selector, pct) {
@@ -627,11 +677,62 @@ function completeMIT(e) {
   saveState();
   renderAll();
 
-  const rect = mitBtn.getBoundingClientRect();
-  confettiBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
-  buzz([20, 40, 20, 40, 20]);
-  toast('🔥 MIT הושלם');
+  buzz([30, 50, 30, 80, 30, 50, 30]);
+  showMITCelebration(mit.title);
 }
+
+function showMITCelebration(title) {
+  const overlay = $('#mit-celebration');
+  $('#mit-celebration-title').textContent = title;
+  recomputeStreaks();
+  const streak = state.streaks.mitCurrent || 0;
+  const streakEl = $('#mit-celebration-streak');
+  streakEl.textContent = streak >= 2 ? `🔥 ${streak} ימים רצוף` : '';
+  overlay.style.display = 'flex';
+
+  // Confetti rain
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const x = Math.random() * window.innerWidth;
+      const y = -20;
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = x + 'px';
+      piece.style.top = y + 'px';
+      const colors = ['#dab974', '#f0d28c', '#b88d3e', '#7a5d2e'];
+      piece.style.background = colors[i % colors.length];
+      const dx = (Math.random() - 0.5) * 200;
+      const dy = window.innerHeight + 40;
+      piece.style.setProperty('--tx', dx + 'px');
+      piece.style.setProperty('--ty', dy + 'px');
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 1400);
+    }, i * 30);
+  }
+
+  // Auto-close after 3.5 seconds
+  setTimeout(() => {
+    overlay.style.transition = 'opacity 0.5s';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.style.opacity = '1';
+      overlay.style.transition = '';
+    }, 500);
+  }, 3500);
+}
+
+// Allow tap to dismiss
+document.addEventListener('DOMContentLoaded', () => {
+  const mit = document.getElementById('mit-celebration');
+  if (mit) mit.addEventListener('click', () => {
+    mit.style.display = 'none';
+  });
+  const rc = document.getElementById('rings-closed');
+  if (rc) rc.addEventListener('click', () => {
+    rc.style.display = 'none';
+  });
+});
 
 function startMitPress(e) {
   const today = todayStr();
