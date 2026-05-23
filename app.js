@@ -432,6 +432,7 @@ function showRingsClosed(taskCount, totalMin) {
 
   buzz([40, 50, 40, 80, 40, 50, 40]);
   if (window.particleBurst) window.particleBurst();
+  if (typeof soundRingsClosed === 'function') soundRingsClosed();
 
   // Heavy confetti for the 3-rings moment
   for (let i = 0; i < 100; i++) {
@@ -680,6 +681,7 @@ function completeMIT(e) {
 
   buzz([30, 50, 30, 80, 30, 50, 30]);
   if (window.particleBurst) window.particleBurst();
+  if (typeof soundMITComplete === 'function') soundMITComplete();
   showMITCelebration(mit.title);
 }
 
@@ -1624,6 +1626,236 @@ $('#install-btn').addEventListener('click', async () => {
 $('#install-dismiss').addEventListener('click', () => {
   $('#install-prompt').style.display = 'none';
   localStorage.setItem('install-dismissed', '1');
+});
+
+// ============ Magic Plan (AI via Gemini) ============
+async function runMagicPlan() {
+  const btn = document.getElementById('magic-plan-btn');
+  if (!btn || btn.classList.contains('loading')) return;
+  btn.classList.add('loading');
+  btn.querySelector('.magic-plan-label').textContent = 'חושב…';
+
+  const today = todayStr();
+  const todays = state.tasks
+    .filter(t => t.date === today)
+    .map(t => ({
+      title: t.title,
+      startTime: t.startTime,
+      endTime: t.endTime,
+      category: t.category,
+      done: t.done,
+    }));
+  const inboxArr = (state.inbox || []).slice(0, 8).map(i => ({ content: i.content }));
+
+  try {
+    const res = await fetch('/api/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tasks: todays,
+        inbox: inboxArr,
+        hour: new Date().getHours(),
+      }),
+    });
+    const data = await res.json();
+
+    if (data.fallback || data.error) {
+      // Fallback: built-in rule-based insight
+      showFallbackInsight(todays, inboxArr);
+    } else {
+      // Show AI insight
+      if (data.insight) {
+        $('#ai-insight-text').textContent = data.insight;
+        $('#ai-insight').style.display = 'block';
+      }
+      if (data.wisdom) {
+        toast(data.wisdom);
+      }
+      // Optionally add suggestions to inbox
+      if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+        // Just show toast with count for now
+        setTimeout(() => toast(`💡 ${data.suggestions.length} הצעות חדשות`), 1200);
+      }
+    }
+  } catch (e) {
+    showFallbackInsight(todays, inboxArr);
+  } finally {
+    btn.classList.remove('loading');
+    btn.querySelector('.magic-plan-label').textContent = 'תכנן לי את היום';
+  }
+}
+
+function showFallbackInsight(tasks, inboxArr) {
+  // Smart fallback using local rules
+  const hour = new Date().getHours();
+  let insight;
+
+  if (tasks.length === 0 && inboxArr.length === 0) {
+    insight = 'יום ריק. תזרוק רעיון ל-Inbox או הוסף משימה.';
+  } else if (tasks.length === 0 && inboxArr.length > 0) {
+    insight = `יש לך ${inboxArr.length} פריטים ב-Inbox. תזמן 1-2 חשובים.`;
+  } else {
+    const mit = tasks.find(t => t.isMit);
+    if (!mit) {
+      insight = 'לא בחרת MIT. סמן ⭐ למשימה הכי חשובה היום.';
+    } else if (hour < 12) {
+      insight = `הבוקר הוא הזמן הכי טוב — קח את ה-MIT עכשיו.`;
+    } else if (hour < 18) {
+      insight = `אחר הצהריים — תעדכן את ה-MIT אם עדיין לא הסתיים.`;
+    } else {
+      insight = `הערב מתקרב — סגור משימה אחת ותסגור את היום.`;
+    }
+  }
+
+  $('#ai-insight-text').textContent = insight;
+  $('#ai-insight').style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('magic-plan-btn');
+  if (btn) btn.addEventListener('click', runMagicPlan);
+});
+
+// ============ Voice Input (Web Speech API) ============
+let voiceRecognition = null;
+let voiceListening = false;
+
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'he-IL';
+  r.continuous = false;
+  r.interimResults = false;
+  return r;
+}
+
+function startVoice() {
+  if (!voiceRecognition) voiceRecognition = initVoice();
+  if (!voiceRecognition) {
+    toast('הקלטה לא נתמכת בדפדפן');
+    return;
+  }
+  if (voiceListening) return;
+  voiceListening = true;
+  toast('🎤 דבר…');
+  buzz(20);
+
+  voiceRecognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    voiceListening = false;
+    // Open modal pre-filled
+    $('#fab').click();
+    setTimeout(() => {
+      const input = $('#modal-title');
+      if (input) {
+        input.value = transcript;
+        input.focus();
+        input.dispatchEvent(new Event('input'));
+      }
+    }, 200);
+  };
+
+  voiceRecognition.onerror = () => {
+    voiceListening = false;
+    toast('לא זוהה דיבור');
+  };
+
+  voiceRecognition.onend = () => {
+    voiceListening = false;
+  };
+
+  try {
+    voiceRecognition.start();
+  } catch (e) {
+    voiceListening = false;
+  }
+}
+
+// Long-press FAB for voice (1 second)
+document.addEventListener('DOMContentLoaded', () => {
+  const fab = document.getElementById('fab');
+  if (!fab) return;
+  let pressTimer = null;
+  let longPressed = false;
+
+  fab.addEventListener('pointerdown', () => {
+    longPressed = false;
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      startVoice();
+    }, 1000);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
+    fab.addEventListener(evt, () => {
+      if (pressTimer) clearTimeout(pressTimer);
+    });
+  });
+});
+
+// ============ Sound Design (Web Audio API) ============
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  return audioCtx;
+}
+
+function playTone(freq, duration = 0.3, type = 'sine', volume = 0.15) {
+  const soundsEnabled = localStorage.getItem('sounds-enabled') !== '0';
+  if (!soundsEnabled) return;
+
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + duration);
+}
+
+function soundCheckmark() {
+  playTone(880, 0.12, 'sine', 0.1);
+}
+
+function soundMITComplete() {
+  // 3-note ascending chord
+  playTone(523.25, 0.4, 'sine', 0.12); // C5
+  setTimeout(() => playTone(659.25, 0.4, 'sine', 0.12), 80); // E5
+  setTimeout(() => playTone(783.99, 0.6, 'sine', 0.14), 160); // G5
+}
+
+function soundRingsClosed() {
+  // Ascending scale — celebration
+  const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.50];
+  notes.forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.3, 'sine', 0.1), i * 100);
+  });
+}
+
+// Hook sounds into existing events
+document.addEventListener('DOMContentLoaded', () => {
+  // Override toggleTaskDone with sound
+  const originalToggleTaskDone = window.toggleTaskDone;
+  if (typeof toggleTaskDone === 'function') {
+    const wrapped = toggleTaskDone;
+    window.toggleTaskDone = function(...args) {
+      soundCheckmark();
+      return wrapped.apply(this, args);
+    };
+  }
 });
 
 // ============ Ambient Particles (Canvas, lightweight) ============

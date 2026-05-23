@@ -2641,6 +2641,101 @@ body::after {
 }
 
 /* ============================================
+   AI INSIGHT STRIP + MAGIC PLAN BUTTON
+   ============================================ */
+.ai-insight {
+  position: relative;
+  background: var(--bg-1);
+  border: 1px solid var(--border-honey);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  animation: heroIn 0.6s var(--ease-out-expo);
+}
+
+.ai-insight-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at left, var(--honey-12), transparent 60%);
+  pointer-events: none;
+}
+
+.ai-insight-content { position: relative; z-index: 1; }
+
+.ai-insight-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--honey);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.ai-insight-text {
+  font-size: 14.5px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.magic-plan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background:
+    linear-gradient(135deg, var(--honey-08), var(--honey-12)),
+    var(--bg-1);
+  border: 1px solid var(--border-honey);
+  border-radius: 14px;
+  padding: 16px 20px;
+  color: var(--honey);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.32s var(--ease-out-expo);
+  margin-bottom: 28px;
+  letter-spacing: -0.005em;
+  position: relative;
+  overflow: hidden;
+}
+
+.magic-plan-btn:hover {
+  background: linear-gradient(135deg, var(--honey-12), var(--honey-18)), var(--bg-2);
+  border-color: var(--honey);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(218, 185, 116, 0.2);
+}
+
+.magic-plan-btn:active { transform: translateY(0); }
+
+.magic-plan-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.magic-plan-btn.loading .magic-plan-spark {
+  animation: sparkSpin 1.2s linear infinite;
+}
+
+.magic-plan-spark {
+  font-size: 17px;
+  display: inline-block;
+  filter: drop-shadow(0 0 8px rgba(218, 185, 116, 0.6));
+}
+
+@keyframes sparkSpin {
+  to { transform: rotate(360deg); }
+}
+
+.magic-plan-label { font-weight: 700; }
+
+/* ============================================
    SIGNATURE MOMENT 1: MIT CELEBRATION (fullscreen)
    ============================================ */
 .mit-celebration {
