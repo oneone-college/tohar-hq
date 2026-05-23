@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 2532" width="1170" height="2532">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c9a572" stop-opacity="0.18"/>
+      <stop offset="50%" stop-color="#c9a572" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0b884"/>
+      <stop offset="100%" stop-color="#c9a572"/>
+    </linearGradient>
+  </defs>
+  <rect width="1170" height="2532" fill="#000000"/>
+  <circle cx="585" cy="1266" r="600" fill="url(#glow)"/>
+  <g transform="translate(585, 1266) scale(8)">
+    <path d="M 20 -65 L -25 15 L -5 15 L -15 65 L 25 -15 L 5 -15 Z" fill="url(#boltGrad)"/>
+  </g>
+  <text x="585" y="1500" font-family="-apple-system, sans-serif" font-size="32" font-weight="600" fill="#c9a572" text-anchor="middle" letter-spacing="6">TOHAR HQ</text>
+</svg>

@@ -2967,7 +2967,41 @@ body::after {
   .mit-card { padding: 22px; margin-bottom: 36px; }
 }
 
-/* PWA standalone */
+/* PWA standalone — Native-grade adjustments */
 @media (display-mode: standalone) {
   .app { padding-top: calc(env(safe-area-inset-top) + 28px); }
+
+  /* Disable user-select (feels more native) */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Allow text inputs to be selectable */
+  input, textarea { -webkit-user-select: text; user-select: text; }
+
+  /* Smoother scrolling like iOS */
+  .app { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+  /* Hide the install banner if standalone */
+  .install-prompt { display: none !important; }
+
+  /* iOS-style status bar gradient when scrolling */
+  body::before { animation-duration: 60s; }
+}
+
+/* Add a thin "edge" highlight that matches iOS apps */
+@media (display-mode: standalone) {
+  .app::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: linear-gradient(180deg, rgba(0,0,0,0.6), transparent);
+    z-index: 100;
+    pointer-events: none;
+  }
 }

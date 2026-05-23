@@ -2257,10 +2257,41 @@ document.querySelectorAll('.firstrun-card').forEach(card => {
   });
 });
 
+// ============ URL Action Shortcuts (from manifest) ============
+function handleUrlAction() {
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  if (action === 'inbox') {
+    setTimeout(() => {
+      $('#fab').click();
+      // switch to inbox tab in modal
+      setTimeout(() => {
+        const inboxTab = document.querySelector('.modal-tab[data-modal-tab="inbox"]');
+        if (inboxTab) inboxTab.click();
+      }, 100);
+    }, 300);
+  } else if (action === 'morning') {
+    setTimeout(() => openMorningRitual(), 300);
+  }
+  // Clean URL
+  if (action) {
+    history.replaceState({}, '', '/');
+  }
+}
+
 loadState();
 renderAll();
 maybeShowFirstRunHelp();
 maybeShowMorningRitual();
+handleUrlAction();
+
+// Detect if running as PWA
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (isPWA) {
+  document.documentElement.classList.add('pwa-installed');
+  // Hide URL bar quickly on first scroll
+  setTimeout(() => window.scrollTo(0, 0), 100);
+}
 maybeShowWeeklySummary();
 maybeShowShutdownBanner();
 
