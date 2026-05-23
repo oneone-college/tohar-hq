@@ -1,54 +1,96 @@
-/* Tohar HQ — Service Worker
-   Caches the app shell for offline use. Data still lives in localStorage. */
+/* Tohar HQ — Service Worker v6
+   Network-first for HTML/JS/CSS (always fresh).
+   Cache-first for assets (fonts, icons). */
 
-const CACHE_NAME = 'tohar-hq-v1';
+const CACHE_VERSION = 'tohar-hq-v6';
+const ASSET_CACHE = 'tohar-hq-assets-v6';
+
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
 ];
 
+// Install — fetch shell into cache
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      // best-effort: don't fail install if some icons aren't there yet
-      Promise.all(
-        APP_SHELL.map((url) =>
-          cache.add(url).catch(() => null)
-        )
-      )
+    caches.open(CACHE_VERSION).then((cache) =>
+      Promise.all(APP_SHELL.map((url) => cache.add(url).catch(() => null)))
     )
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Activate immediately, don't wait
 });
 
+// Activate — clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_VERSION && k !== ASSET_CACHE)
+          .map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// Fetch — strategy depends on resource type
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetched = fetch(event.request).then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
+  const url = new URL(req.url);
+
+  // External requests (fonts, etc.) — cache-first
+  if (url.origin !== self.location.origin) {
+    event.respondWith(
+      caches.match(req).then((cached) =>
+        cached ||
+        fetch(req).then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(ASSET_CACHE).then((cache) => cache.put(req, copy));
+          }
+          return response;
+        }).catch(() => cached)
+      )
+    );
+    return;
+  }
+
+  // HTML/JS/CSS — network-first (always fresh!)
+  const isAppCode = /\.(html|js|css|json)$/i.test(url.pathname) || url.pathname === '/' || url.pathname.endsWith('/');
+
+  if (isAppCode) {
+    event.respondWith(
+      fetch(req).then((response) => {
+        if (response && response.status === 200) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
+        }
+        return response;
+      }).catch(() => caches.match(req).then((cached) => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Icons & other assets — cache-first with background refresh
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const fetchPromise = fetch(req).then((response) => {
+        if (response && response.status === 200) {
+          const copy = response.clone();
+          caches.open(ASSET_CACHE).then((cache) => cache.put(req, copy));
         }
         return response;
       }).catch(() => cached);
-      return cached || fetched;
+      return cached || fetchPromise;
     })
   );
+});
+
+// Listen for skip waiting message
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

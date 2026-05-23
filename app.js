@@ -1523,11 +1523,51 @@ $('#install-dismiss').addEventListener('click', () => {
   localStorage.setItem('install-dismissed', '1');
 });
 
-// ============ Service Worker ============
+// ============ Service Worker + Auto-Update ============
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('service-worker.js').then((reg) => {
+      // Check for updates every minute while page is open
+      setInterval(() => reg.update(), 60_000);
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version available
+            showUpdateBanner(newWorker);
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Reload page when new SW takes over
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   });
+}
+
+function showUpdateBanner(worker) {
+  // Create banner if not exists
+  let banner = document.getElementById('update-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'update-banner';
+    banner.className = 'update-banner';
+    banner.innerHTML = `
+      <span class="update-text">✨ גרסה חדשה זמינה</span>
+      <button class="update-btn" id="update-btn">רענן</button>
+    `;
+    document.body.appendChild(banner);
+    document.getElementById('update-btn').addEventListener('click', () => {
+      worker.postMessage({ type: 'SKIP_WAITING' });
+    });
+  }
 }
 
 // ============ Keyboard Shortcuts ============
